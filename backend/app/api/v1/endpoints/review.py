@@ -1,16 +1,21 @@
 from fastapi import APIRouter
-from schemas import ReviewRequest, ReviewResponse
+from app.schemas import ReviewRequest, ReviewResponse
 
+from app.services.sentiment_analysis_service import SentimentAnalysisService
+from app.services.suggestion_service import SuggestionService
 
 router = APIRouter()
 
 @router.post("/reviews")
 def analyze_review(request: ReviewRequest) -> ReviewResponse:
+    sentiment, polarity  = SentimentAnalysisService.analyze(request.text)
+    quality = SuggestionService.evaluate_review(request.text)
+
     return ReviewResponse(
-        text='Test',
-        sentiment='Positive',
-        polarity=0.5,
-        suggestion="Should improve this feedback for X reasons",
-        status="Accept",
-        feedback="It's a good pillow"
+        text=request.text,
+        sentiment=sentiment,
+        polarity=polarity,
+        suggestion=quality['suggestion'],
+        status=quality['status'],
+        feedback=quality['feedback']
     )

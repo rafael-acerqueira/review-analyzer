@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from api.v1.endpoints import review
+from app.api.v1.endpoints import review
 
 app = FastAPI(title="Review Helper API")
 
