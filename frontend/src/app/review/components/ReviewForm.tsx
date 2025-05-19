@@ -28,6 +28,15 @@ export default function ReviewForm() {
     },
   })
 
+
+  const confirmSubmission = () => {
+    toast.success('Review confirmed and saved!');
+    // call db to save this record
+    setReview('');
+    setApproved(false);
+    setLlmFeedback(null);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     mutation.mutate()
@@ -47,13 +56,26 @@ export default function ReviewForm() {
           onChange={(e) => setReview(e.target.value)}
           disabled={mutation.isPending}
         />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-          disabled={mutation.isPending}
-        >
-          {mutation.isPending ? 'Analisando...' : 'Enviar para Análise'}
-        </button>
+        {!approved && (
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? 'Analyzing...' : 'Send for Analysis'}
+          </button>
+        )}
+
+        {approved && (
+          <button
+            type="button"
+            onClick={confirmSubmission}
+            className="bg-green-600 text-white px-4 py-2 rounded"
+          >
+            Confirm and Submit Assessment
+          </button>
+        )}
+
         {llmFeedback && (
           <div className="mt-4 p-4 border rounded bg-gray-100 space-y-2">
             <p><strong>Status:</strong> {llmFeedback.status}</p>
