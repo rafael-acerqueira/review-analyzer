@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useMutation } from '@tanstack/react-query';
 import { submitReviewRequest } from '../../lib/reviewService'
+import toast, { Toaster } from "react-hot-toast";
 
 export default function ReviewForm() {
   const [review, setReview] = useState('')
@@ -15,12 +16,14 @@ export default function ReviewForm() {
       setLlmFeedback(data);
       if (data.status === 'Accepted') {
         setApproved(true);
+        toast.success('✅ Review accepted! Confirm submission below.');
       } else {
         setApproved(false);
+        toast.error('❌ Review rejected. See the feedback.');
       }
     },
     onError: (error: any) => {
-      console.log(error.message)
+      toast.error(error.message || 'Unexpected Error.');
 
     },
   })
@@ -32,6 +35,7 @@ export default function ReviewForm() {
 
   return (
     <div className="max-w-lg mx-auto p-4 bg-white shadow rounded-xl space-y-4">
+      <Toaster />
       <h1 className="text-xl font-bold">Client Review</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <textarea
