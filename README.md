@@ -1,5 +1,9 @@
 # 🧠 Review Analyzer
 
+![Backend CI](https://github.com/rafael-acerqueira/review-analyzer/actions/workflows/backend-ci.yml/badge.svg)
+![Frontend CI](https://github.com/rafael-acerqueira/review-analyzer/actions/workflows/frontend-ci.yml/badge.svg)
+
+
 **Review Analyzer** is a fullstack AI-powered application that evaluates product reviews in real time. It uses sentiment analysis to detect tone and leverages a Large Language Model (LLM) to assess review quality and provide improvement suggestions when needed.
 
 ---
@@ -117,8 +121,9 @@ review-analyzer/
 
 ## 🔮 Roadmap
 
+- [x] ⚙️ Continuous Integration (CI) with Github Actions
+- [x] 🧪 End-to-end tests with Playwright
 - [ ] ✍️ Feedback loop for rejected reviews
-- [ ] 🧪 End-to-end tests with Playwright
 - [ ] 📊 Admin dashboard with filters and stats
 - [ ] 🔐 User authentication + history
 - [ ] 🌐 Multi-language support (i18n)
