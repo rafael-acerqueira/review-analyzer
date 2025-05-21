@@ -9,34 +9,72 @@ on:
       - 'frontend/**'
 
 jobs:
-  test:
+  e2e-tests:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '18'
 
-      - name: Install dependencies
+      - name: Install frontend dependencies
+        working-directory: frontend
         run: npm install
 
       - name: Install Playwright Browsers
+        working-directory: frontend
         run: npx playwright install --with-deps
 
+      - name: Install wait-on globally
+        run: npm install -g wait-on
+
       - name: Build Next.js app
+        working-directory: frontend
         run: npm run build
 
       - name: Start Next.js app
+        working-directory: frontend
         run: npm start &
 
       - name: Wait for Next.js to be ready
-        run: npx wait-on http://localhost:3000
+        run: wait-on http://localhost:3000 --timeout 60000
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m venv .venv
+          . .venv/bin/activate
+          pip install -r requirements.txt
+
+      - name: Start FastAPI backend
+        working-directory: backend
+        run: |
+          . .venv/bin/activate
+          echo "Starting FastAPI..."
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level debug > uvicorn.log 2>&1 &
+
+      - name: List running processes
+        run: ps aux
+
+      - name: Wait a bit for backend
+        run: sleep 10
+
+      - name: Show FastAPI logs
+        working-directory: backend
+        run: cat uvicorn.log
+
+      - name: Wait for FastAPI backend to be ready
+        run: wait-on http://localhost:8000 --timeout 60000
 
       - name: Run Playwright tests
+        working-directory: frontend
         run: npx playwright test
