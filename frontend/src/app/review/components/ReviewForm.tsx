@@ -6,10 +6,18 @@ import { submitReviewRequest } from '../../lib/reviewService'
 import toast, { Toaster } from "react-hot-toast"
 import { motion, AnimatePresence } from 'framer-motion'
 
+interface LLMFeedback {
+  sentiment: string
+  polarity: number
+  status: 'Accepted' | 'Rejected'
+  feedback: string
+  suggestion?: string
+}
+
 export default function ReviewForm() {
   const [review, setReview] = useState('')
   const [approved, setApproved] = useState(false)
-  const [llmFeedback, setLlmFeedback] = useState<any | null>(null)
+  const [llmFeedback, setLlmFeedback] = useState<LLMFeedback | null>(null)
 
   const mutation = useMutation({
     mutationFn: () => submitReviewRequest({ text: review }),
@@ -23,8 +31,10 @@ export default function ReviewForm() {
         toast.error('❌ Review rejected. See the feedback.')
       }
     },
-    onError: (error: any) => {
-      toast.error(error.message || 'Unexpected Error.')
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Unexpected Error.')
+      }
     },
   })
 
@@ -66,7 +76,7 @@ export default function ReviewForm() {
           />
 
           {approved && (
-            <p className="text-xs text-gray-500">Review approved. You can't edit it. Confirm or discard.</p>
+            <p className="text-xs text-gray-500">Review approved. You can&apos;t edit it. Confirm or discard.</p>
           )}
 
           {!approved && (
