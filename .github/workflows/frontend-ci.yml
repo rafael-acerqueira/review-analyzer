@@ -60,7 +60,7 @@ jobs:
         run: |
           . .venv/bin/activate
           echo "Starting FastAPI..."
-          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level debug > uvicorn.log 2>&1 &
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --log-level debug > uvicorn.log 2>&1 &
 
       - name: List running processes
         run: ps aux
@@ -73,7 +73,10 @@ jobs:
         run: cat uvicorn.log
 
       - name: Wait for FastAPI backend to be ready
-        run: wait-on http://localhost:8000 --timeout 60000
+        run: wait-on tcp:127.0.0.1:8000 --timeout 60000
+
+      - name: Test FastAPI HTTP response
+        run: curl -v http://127.0.0.1:8000
 
       - name: Run Playwright tests
         working-directory: frontend
