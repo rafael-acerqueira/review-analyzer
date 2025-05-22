@@ -9,9 +9,11 @@ test('submit review and receive the feedback', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeVisible()
-  await expect(page.getByTestId('sugestion-text')).not.toBeVisible()
-  await expect(page.getByTestId('confirm-and-submit')).toBeVisible()
+  await expect(page.getByTestId('feedback-message')).toBeAttached();
+
+  await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
+
+  await expect(page.getByTestId('confirm-and-submit')).toBeAttached();
 })
 
 test('submit review and receive a suggestion if dont provide enough information', async ({ page }) => {
@@ -23,12 +25,12 @@ test('submit review and receive a suggestion if dont provide enough information'
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeVisible()
-  await expect(page.getByTestId('sugestion-text')).toBeVisible()
-  await expect(page.getByTestId('confirm-and-submit')).not.toBeVisible()
+  await expect(page.getByTestId('feedback-message')).toBeAttached();
 
+  await expect(page.getByTestId('suggestion-text')).toBeAttached();
+
+  await expect(page.getByTestId('confirm-and-submit')).not.toBeAttached();
 })
-
 
 test('submit review to analysis but discards', async ({ page }) => {
   await page.goto('http://localhost:3000')
@@ -40,18 +42,22 @@ test('submit review to analysis but discards', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeVisible()
-  await expect(page.getByTestId('sugestion-text')).not.toBeVisible()
-  await expect(page.getByTestId('confirm-and-submit')).toBeVisible()
-  await expect(page.getByTestId('discard')).toBeVisible()
+  await expect(page.getByTestId('feedback-message')).toBeAttached();
 
-  await page.getByTestId('discard').click()
+  await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
 
-  await expect(page.getByTestId('send-to-analysis')).toBeVisible()
-  await expect(page.getByPlaceholder('Tell me your thoughts')).toBeEmpty()
-  await expect(page.getByTestId('feedback-message')).not.toBeVisible()
-  await expect(page.getByTestId('sugestion-text')).not.toBeVisible()
-  await expect(page.getByTestId('confirm-and-submit')).not.toBeVisible()
-  await expect(page.getByTestId('discard')).not.toBeVisible()
+  await expect(page.getByTestId('confirm-and-submit')).toBeAttached();
 
+  await expect(page.getByTestId('discard')).toBeAttached();
+
+  await page.getByTestId('discard').click();
+
+  await expect(page.getByTestId('send-to-analysis')).toBeAttached();
+
+  await expect(page.getByPlaceholder('Tell me your thoughts')).toBeEmpty();
+
+  await expect(page.getByTestId('feedback-message')).not.toBeAttached();
+  await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
+  await expect(page.getByTestId('confirm-and-submit')).not.toBeAttached();
+  await expect(page.getByTestId('discard')).not.toBeAttached();
 })

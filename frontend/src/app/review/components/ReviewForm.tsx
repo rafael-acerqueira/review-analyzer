@@ -154,7 +154,7 @@ export default function ReviewForm() {
                 </div>
 
                 {llmFeedback.suggestion && llmFeedback.suggestion.trim() !== '' && (
-                  <div className="p-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md italic" data-testid="sugestion-text">
+                  <div className="p-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md italic" data-testid="suggestion-text">
                     <strong>Suggestion:</strong> {llmFeedback.suggestion}
                   </div>
                 )}
