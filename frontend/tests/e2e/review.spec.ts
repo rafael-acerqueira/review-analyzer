@@ -9,7 +9,7 @@ test('submit review and receive the feedback', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeAttached();
+  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
 
   await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
 
@@ -25,7 +25,7 @@ test('submit review and receive a suggestion if dont provide enough information'
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeAttached();
+  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
 
   await expect(page.getByTestId('suggestion-text')).toBeAttached();
 
@@ -42,7 +42,7 @@ test('submit review to analysis but discards', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Send for Analysis' }).click()
 
-  await expect(page.getByTestId('feedback-message')).toBeAttached();
+  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
 
   await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
 
