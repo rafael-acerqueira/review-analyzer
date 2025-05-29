@@ -31,3 +31,9 @@ def delete_review(session: Session, review_id: int):
         session.commit()
         return True
     return False
+
+def create_review(session: Session, review: Review) -> Review:
+    session.add(review)
+    session.commit()
+    session.refresh(review)
+    return review
