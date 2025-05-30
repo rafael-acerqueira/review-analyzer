@@ -11,11 +11,11 @@ from app.services.suggestion_service import SuggestionService
 
 router = APIRouter()
 
-@router.post("/")
-def create_review(review: Review, session: Session = Depends(get_session)) -> Review:
+@router.post("/reviews")
+def create_new_review(review: Review, session: Session = Depends(get_session)) -> Review:
     return create_review(session, review)
 
-@router.post("/reviews")
+@router.post("/analyze_review")
 def analyze_review(request: ReviewRequest) -> ReviewResponse:
     sentiment, polarity  = SentimentAnalysisService.analyze(request.text)
     quality = SuggestionService.evaluate_review(request.text)
