@@ -8,4 +8,4 @@ async def root():
     return {"status": "ok"}
 
 app.include_router(review.router, prefix="/api/v1")
-app.include_router(admin.router, prefix="/api/v1")
+app.include_router(admin.router, prefix="/api/v1/admin")
