@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
 
   const apiUrl = process.env.API_URL;
 
@@ -11,7 +11,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     );
   }
 
-  const id = params.id
+  const { id } = context.params
 
   if (!id) {
     return NextResponse.json(
