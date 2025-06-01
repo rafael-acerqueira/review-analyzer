@@ -29,3 +29,12 @@ export async function createReview(payload: Review) {
   if (!response.ok) throw new Error("We got an error during the review store")
   return response.json()
 }
+
+export async function listReview() {
+  const response = await fetch("/api/list-review-proxy", {
+    method: "GET",
+    headers: { "Content-Type": "application/json" }
+  })
+  if (!response.ok) throw new Error("We got an error listing the reviews")
+  return response.json()
+}
