@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+
+export async function DELETE(req: NextRequest, context: any) {
 
   const apiUrl = process.env.API_URL;
 
