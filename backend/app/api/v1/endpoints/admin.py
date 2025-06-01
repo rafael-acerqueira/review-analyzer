@@ -22,4 +22,4 @@ def list_reviews(
 def remove_review(review_id: int, session: Session = Depends(get_session)):
     if not delete_review(session, review_id):
         raise HTTPException(status_code=404, detail="Review not found")
-    return {"detail": "Review deleted successfully"}
+    return {"review_id": review_id}
