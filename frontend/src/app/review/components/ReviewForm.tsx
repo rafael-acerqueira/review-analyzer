@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useMutation } from '@tanstack/react-query'
-import { submitReviewRequest } from '../../lib/reviewService'
+import { submitReviewRequest, createReview } from '../../lib/reviewService'
 import toast, { Toaster } from "react-hot-toast"
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -38,11 +38,37 @@ export default function ReviewForm() {
     },
   })
 
-  const confirmSubmission = () => {
-    toast.success('Review confirmed and saved!')
-    setReview('')
-    setApproved(false)
-    setLlmFeedback(null)
+  const createMutation = useMutation({
+    mutationFn: () => createReview({
+      text: review,
+      sentiment: llmFeedback ? llmFeedback.sentiment : "",
+      status: llmFeedback ? llmFeedback.status : "",
+      feedback: llmFeedback ? llmFeedback.feedback : "",
+      suggestion: llmFeedback ? llmFeedback.suggestion : ""
+    }),
+    onSuccess: (data) => {
+      setLlmFeedback(data)
+      if (data.status === 'Accepted') {
+        toast.success('Review confirmed and saved!')
+
+        setReview('')
+        setApproved(false)
+        setLlmFeedback(null)
+      } else {
+        setApproved(false)
+        toast.error('❌ An error occurred during the review store')
+      }
+    },
+    onError: (error: unknown) => {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Unexpected Error.')
+      }
+    },
+  })
+
+  const confirmSubmission = async (e: React.FormEvent) => {
+    e.preventDefault()
+    createMutation.mutate()
   }
 
   const handleSubmit = (e: React.FormEvent) => {
