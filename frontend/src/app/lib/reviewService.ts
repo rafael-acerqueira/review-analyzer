@@ -4,6 +4,7 @@ export type ReviewPayload = {
 
 export type Review = {
   text: string,
+  corrected_text?: string,
   sentiment: string,
   status: string,
   feedback: string,

@@ -73,10 +73,12 @@ export default function AdminPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
-              <th className="px-4 py-2 text-left">Text</th>
+              <th className="px-4 py-2 text-left">Original Text</th>
               <th className="px-4 py-2">Sentiment</th>
               <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2">Feedback</th>
+              <th className="px-4 py-2">Suggestion</th>
+              <th className="px-4 py-2">Corrected Text</th>
               <th className="px-4 py-2">Created</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
@@ -88,6 +90,8 @@ export default function AdminPage() {
                 <td className="px-4 py-2 text-center">{r.sentiment}</td>
                 <td className="px-4 py-2 text-center">{r.status}</td>
                 <td className="px-4 py-2 max-w-xs truncate" title={r.feedback}>{r.feedback}</td>
+                <td className="px-4 py-2 max-w-xs truncate" title={r.suggestion}>{r.suggestion}</td>
+                <td className="px-4 py-2 max-w-xs truncate" title={r.corrected_text}>{r.corrected_text}</td>
                 <td className="px-4 py-2 text-center">{format(new Date(r.created_at), 'yyyy-MM-dd HH:mm')}</td>
                 <td className="px-4 py-2 text-center">
                   <button
