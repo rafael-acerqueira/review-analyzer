@@ -38,3 +38,12 @@ export async function listReview() {
   if (!response.ok) throw new Error("We got an error listing the reviews")
   return response.json()
 }
+
+export async function deleteReview(id: number) {
+  const response = await fetch(`/api/delete-review-proxy/${id}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+  })
+  if (!response.ok) throw new Error("We got an error listings the reviews")
+  return response.json()
+}
