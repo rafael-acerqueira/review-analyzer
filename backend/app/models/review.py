@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 class Review(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     text: str
+    corrected_text: Optional[str] = ""
     sentiment: str
     status: str
     feedback: str
