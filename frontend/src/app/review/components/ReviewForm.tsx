@@ -16,18 +16,41 @@ interface LLMFeedback {
 
 export default function ReviewForm() {
   const [review, setReview] = useState('')
+  const [originalReview, setOriginalReview] = useState('')
+  const [correctedText, setCorrectedText] = useState('')
+  const [fillCorrectedText, setFillCorrectedText] = useState(false)
   const [approved, setApproved] = useState(false)
   const [llmFeedback, setLlmFeedback] = useState<LLMFeedback | null>(null)
+  const [feedback, setFeedback] = useState('')
+  const [suggestion, setSuggestion] = useState('')
+  const [status, setStatus] = useState('')
+  const [sentiment, setSentiment] = useState('')
 
   const mutation = useMutation({
     mutationFn: () => submitReviewRequest({ text: review }),
     onSuccess: (data) => {
       setLlmFeedback(data)
+      if (originalReview == '') {
+        setOriginalReview(review)
+        setFeedback(data.feedback)
+        setSuggestion(data.suggestion)
+        setStatus(data.status)
+        setSentiment(data.sentiment)
+      }
+
+
       if (data.status === 'Accepted') {
         setApproved(true)
+
+        if (fillCorrectedText) {
+          setCorrectedText(review)
+        }
+
         toast.success('✅ Review accepted! Confirm submission below.')
       } else {
         setApproved(false)
+        setFillCorrectedText(true)
+
         toast.error('❌ Review rejected. See the feedback.')
       }
     },
@@ -40,24 +63,20 @@ export default function ReviewForm() {
 
   const createMutation = useMutation({
     mutationFn: () => createReview({
-      text: review,
-      sentiment: llmFeedback ? llmFeedback.sentiment : "",
-      status: llmFeedback ? llmFeedback.status : "",
-      feedback: llmFeedback ? llmFeedback.feedback : "",
-      suggestion: llmFeedback ? llmFeedback.suggestion : ""
+      text: originalReview,
+      corrected_text: correctedText,
+      sentiment: sentiment,
+      status: status,
+      feedback: feedback,
+      suggestion: suggestion
     }),
-    onSuccess: (data) => {
-      setLlmFeedback(data)
-      if (data.status === 'Accepted') {
-        toast.success('Review confirmed and saved!')
+    onSuccess: () => {
+      toast.success('Review confirmed and saved!')
+      setReview('')
+      setCorrectedText('')
+      setApproved(false)
+      setLlmFeedback(null)
 
-        setReview('')
-        setApproved(false)
-        setLlmFeedback(null)
-      } else {
-        setApproved(false)
-        toast.error('❌ An error occurred during the review store')
-      }
     },
     onError: (error: unknown) => {
       if (error instanceof Error) {
@@ -78,6 +97,7 @@ export default function ReviewForm() {
 
   const discardReview = () => {
     setReview('')
+    setCorrectedText('')
     setApproved(false)
     setLlmFeedback(null)
     toast('Review discarded. You can write a new one.', { icon: '🗑️' })

@@ -12,6 +12,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
+
   try {
     const response = await fetch(`${apiUrl}/api/v1/reviews`, {
       method: 'POST',
