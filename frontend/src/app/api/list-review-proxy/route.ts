@@ -1,6 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
 
   const apiUrl = process.env.API_URL;
 
@@ -11,8 +11,10 @@ export async function GET() {
     );
   }
 
+  const searchParams = req.nextUrl.searchParams
+
   try {
-    const response = await fetch(`${apiUrl}/api/v1/admin/reviews`, {
+    const response = await fetch(`${apiUrl}/api/v1/admin/reviews?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json'

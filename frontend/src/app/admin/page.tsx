@@ -1,59 +1,30 @@
 
 'use client'
 
-
-
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { deleteReview, listReview } from '../lib/reviewService'
-
-interface Review {
-  id: number
-  sentiment: string
-  polarity: number
-  status: 'Accepted' | 'Rejected'
-  feedback: string
-  suggestion?: string
-}
+import ReviewFilters from '../review/components/ReviewFilters'
 
 
 export default function AdminPage() {
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
+  const [filters, setFilters] = useState<Record<string, string>>({})
+  const queryClient = useQueryClient()
 
 
-  const mutation = useMutation({
-    mutationFn: () => listReview(),
-    onSuccess: (data) => {
-      setReviews(data)
-      setLoading(false)
-    },
-    onError: (error: unknown) => {
-      if (error instanceof Error) {
-        setError(error.message)
-        setLoading(false)
-      }
-    },
+  const { data: reviews = [], isLoading, error } = useQuery({
+    queryKey: ['reviews', filters],
+    queryFn: () => listReview(filters),
   })
 
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteReview(id),
-    onSuccess: (data) => {
-      setReviews(reviews => reviews.filter(r => r.id != data["review_id"]))
-    },
-    onError: (error: unknown) => {
-      if (error instanceof Error) {
-        setError(error.message)
-      }
-    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['reviews'] })
+    }
   })
-
-  useEffect(() => {
-    mutation.mutate()
-  }, [])
 
 
   const handleDelete = async (id: number) => {
@@ -63,13 +34,14 @@ export default function AdminPage() {
     deleteMutation.mutate(id)
   }
 
-  if (loading) return <p className="text-center mt-8">Loading...</p>
-  if (error) return <p className="text-red-500 text-center mt-8">{error}</p>
+  if (isLoading) return <p className="text-center mt-8">Loading...</p>
+  if (error) return <p className="text-red-500 text-center mt-8">{error.message}</p>
 
   return (
     <div className="max-w-6xl mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-6 text-center">Admin Panel - Reviews</h1>
       <div className="overflow-x-auto border rounded-xl shadow-sm">
+        <ReviewFilters onApply={setFilters} />
         <table className="min-w-full text-sm">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
@@ -84,7 +56,7 @@ export default function AdminPage() {
             </tr>
           </thead>
           <tbody>
-            {reviews.map((r: any) => (
+            {reviews.length > 0 ? (reviews.map((r: any) => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2 max-w-xs truncate" title={r.text}>{r.text}</td>
                 <td className="px-4 py-2 text-center">{r.sentiment}</td>
@@ -96,13 +68,17 @@ export default function AdminPage() {
                 <td className="px-4 py-2 text-center">
                   <button
                     onClick={() => handleDelete(r.id)}
-                    className="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded"
+                    className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded"
                   >
                     Delete
                   </button>
                 </td>
               </tr>
-            ))}
+            )))
+              : (
+                <tr className="border-t hover:bg-gray-50">
+                  <td colSpan={7} className='text-center'>No records found!</td>
+                </tr>)}
           </tbody>
         </table>
       </div>

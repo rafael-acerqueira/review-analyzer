@@ -31,8 +31,9 @@ export async function createReview(payload: Review) {
   return response.json()
 }
 
-export async function listReview() {
-  const response = await fetch("/api/list-review-proxy", {
+export async function listReview(filters: Record<string, string> = {}) {
+  const query = new URLSearchParams(filters).toString()
+  const response = await fetch(`/api/list-review-proxy?${query}`, {
     method: "GET",
     headers: { "Content-Type": "application/json" }
   })
