@@ -6,9 +6,11 @@ import { format } from 'date-fns'
 import { useState } from 'react'
 import { deleteReview, listReview } from '../lib/reviewService'
 import ReviewFilters from '../review/components/ReviewFilters'
+import ReviewDetailsModal from '../review/components/ReviewDetailsModal'
 
 
 export default function AdminPage() {
+  const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
 
@@ -45,12 +47,8 @@ export default function AdminPage() {
         <table className="min-w-full text-sm">
           <thead className="bg-gray-100 text-gray-600">
             <tr>
-              <th className="px-4 py-2 text-left">Original Text</th>
               <th className="px-4 py-2">Sentiment</th>
               <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Feedback</th>
-              <th className="px-4 py-2">Suggestion</th>
-              <th className="px-4 py-2">Corrected Text</th>
               <th className="px-4 py-2">Created</th>
               <th className="px-4 py-2">Actions</th>
             </tr>
@@ -58,20 +56,24 @@ export default function AdminPage() {
           <tbody>
             {reviews.length > 0 ? (reviews.map((r: any) => (
               <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 max-w-xs truncate" title={r.text}>{r.text}</td>
                 <td className="px-4 py-2 text-center">{r.sentiment}</td>
                 <td className="px-4 py-2 text-center">{r.status}</td>
-                <td className="px-4 py-2 max-w-xs truncate" title={r.feedback}>{r.feedback}</td>
-                <td className="px-4 py-2 max-w-xs truncate" title={r.suggestion}>{r.suggestion}</td>
-                <td className="px-4 py-2 max-w-xs truncate" title={r.corrected_text}>{r.corrected_text}</td>
                 <td className="px-4 py-2 text-center">{format(new Date(r.created_at), 'yyyy-MM-dd HH:mm')}</td>
                 <td className="px-4 py-2 text-center">
-                  <button
-                    onClick={() => handleDelete(r.id)}
-                    className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex justify-center gap-2">
+                    <button
+                      onClick={() => setSelectedReview(r)}
+                      className="text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 py-1 rounded"
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r.id)}
+                      className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             )))
@@ -82,6 +84,14 @@ export default function AdminPage() {
           </tbody>
         </table>
       </div>
+      {selectedReview && (
+        <ReviewDetailsModal
+          isOpen={!!selectedReview}
+          onClose={() => setSelectedReview(null)}
+          review={selectedReview}
+        />
+      )}
     </div>
+
   )
 }
