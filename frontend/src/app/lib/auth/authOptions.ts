@@ -15,7 +15,7 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.API_URL}/api/v1/auth/login`, {
+        const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials)
@@ -46,7 +46,7 @@ export const authOptions: AuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === 'google' && profile?.email) {
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/auth/google`, {
+          const res = await fetch('api/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
