@@ -31,6 +31,7 @@ export default function AuthForm() {
         toast.success('Welcome back!')
         router.push('/')
       }
+      setLoading(false)
     } else {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
@@ -42,13 +43,14 @@ export default function AuthForm() {
         await signIn('credentials', { redirect: false, email, password })
         toast.success('Account created!')
         router.push('/')
+        setLoading(false)
       } else {
         const data = await res.json()
         toast.error(data.detail || 'Registration failed')
+        setLoading(false)
+        return
       }
     }
-
-    setLoading(false)
   }
 
   return (
