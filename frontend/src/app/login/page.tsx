@@ -26,7 +26,7 @@ export default function AuthForm() {
       })
 
       if (result?.error) {
-        toast.error(result.error)
+        toast.error('Invalid credentials or user not found')
       } else {
         toast.success('Welcome back!')
         router.push('/')
