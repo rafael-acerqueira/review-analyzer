@@ -1,0 +1,49 @@
+from typing import Optional
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlmodel import Session, select
+from app.models.user import User
+from app.database import get_session
+from app.schemas import UserCreate, GoogleUser, UserLogin
+from app.security import hash_password, create_access_token, verify_password
+
+router = APIRouter()
+
+@router.post("/register")
+def register_user(user: UserCreate, session: Session = Depends(get_session)):
+    existing_user = session.exec(select(User).where(User.email == user.email)).first()
+    if existing_user:
+        raise HTTPException(status_code=400, detail="User already registered")
+
+    hashed_pw = hash_password(user.password)
+    new_user = User(email=user.email, hashed_password=hashed_pw)
+    session.add(new_user)
+    session.commit()
+    session.refresh(new_user)
+    return {"id": new_user.id, "email": new_user.email}
+
+@router.post("/google")
+def google_login(user: GoogleUser, session: Session = Depends(get_session)):
+    existing_user = session.exec(select(User).where(User.email == user.email)).first()
+    if not existing_user:
+        new_user = User(email=user.email, provider="google", sub=user.sub)
+        session.add(new_user)
+        session.commit()
+        session.refresh(new_user)
+        return {"id": new_user.id, "email": new_user.email}
+    raise HTTPException(status_code=400, detail="User already registered")
+
+
+@router.post("/login")
+def login(user: UserLogin, session: Session = Depends(get_session)):
+    db_user = session.exec(select(User).where(User.email == user.email)).first()
+    if not db_user or not verify_password(user.password, db_user.hashed_password):
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+
+        token = create_access_token({"sub": db_user.email})
+
+    return {
+        "id": db_user.id,
+        "email": db_user.email,
+        "token": token
+    }
