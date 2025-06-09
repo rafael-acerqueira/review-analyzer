@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from app.schemas import ReviewRequest, ReviewResponse
 from app.models.review import Review
 from app.database import get_session
@@ -11,7 +11,7 @@ from app.services.suggestion_service import SuggestionService
 
 router = APIRouter()
 
-@router.post("/reviews")
+@router.post("/reviews", status_code=status.HTTP_201_CREATED)
 def create_new_review(review: Review, session: Session = Depends(get_session)) -> Review:
     return create_review(session, review)
 
