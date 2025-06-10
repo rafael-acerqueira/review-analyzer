@@ -9,11 +9,12 @@ import ReviewFilters from '../review/components/ReviewFilters'
 import ReviewDetailsModal from '../review/components/ReviewDetailsModal'
 import { useSession } from 'next-auth/react'
 
+
 export default function AdminPage() {
 
   const { data: session } = useSession();
 
-  const token = session?.user?.token
+  const token = session?.user?.token || ""
 
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})

@@ -10,13 +10,19 @@ export async function middleware(req) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  if (session.user?.role !== "admin") {
-    return NextResponse.redirect(new URL("/", req.url));
+  if (req.nextUrl.pathname === '/') {
+    return NextResponse.next();
+  }
+
+  if (req.nextUrl.pathname.startsWith('/admin')) {
+    if (session.user?.role !== 'admin') {
+      return NextResponse.redirect(new URL('/', req.url));
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/admin/*"],
+  matcher: ["/admin/*", "/"],
 };
