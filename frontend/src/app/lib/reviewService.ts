@@ -31,20 +31,20 @@ export async function createReview(payload: Review) {
   return response.json()
 }
 
-export async function listReview(filters: Record<string, string> = {}) {
+export async function listReview(filters: Record<string, string> = {}, token: string) {
   const query = new URLSearchParams(filters).toString()
   const response = await fetch(`/api/list-review-proxy?${query}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json" }
+    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }
   })
   if (!response.ok) throw new Error("We got an error listing the reviews")
   return response.json()
 }
 
-export async function deleteReview(id: number) {
+export async function deleteReview(id: number, token: string) {
   const response = await fetch(`/api/delete-review-proxy/${id}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
   })
   if (!response.ok) throw new Error("We got an error listings the reviews")
   return response.json()

@@ -7,9 +7,14 @@ import { useState } from 'react'
 import { deleteReview, listReview } from '../lib/reviewService'
 import ReviewFilters from '../review/components/ReviewFilters'
 import ReviewDetailsModal from '../review/components/ReviewDetailsModal'
-
+import { useSession } from 'next-auth/react'
 
 export default function AdminPage() {
+
+  const { data: session } = useSession();
+
+  const token = session?.user?.token
+
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
@@ -17,12 +22,12 @@ export default function AdminPage() {
 
   const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['reviews', filters],
-    queryFn: () => listReview(filters),
+    queryFn: () => listReview(filters, token),
   })
 
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteReview(id),
+    mutationFn: (id: number) => deleteReview(id, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
     }
