@@ -108,7 +108,7 @@ export default function ReviewForm() {
       <div className="max-w-lg w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5">
         <Toaster position="top-right" />
 
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>
+        <h1 data-testid="title" className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <textarea
