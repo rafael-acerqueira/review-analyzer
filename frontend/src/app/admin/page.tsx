@@ -14,7 +14,7 @@ export default function AdminPage() {
 
   const { data: session } = useSession();
 
-  const token = session?.user?.token || ""
+  const token = session?.user?.access_token || ""
 
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
