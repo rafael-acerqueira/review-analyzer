@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 from app.models.user import User
 from app.database import get_session
 from app.schemas import UserCreate, GoogleUser, UserLogin
-from app.security import hash_password, create_access_token, verify_password
+from app.security import hash_password, create_access_token, verify_password, create_refresh_token
 
 router = APIRouter()
 
@@ -40,10 +40,12 @@ def login(user: UserLogin, session: Session = Depends(get_session)):
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    token = create_access_token({"sub": db_user.id})
+    access_token = create_access_token({"sub": str(db_user.id)})
+    refresh_token = create_refresh_token({"sub": str(db_user.id)})
 
     return {
         "id": db_user.id,
         "email": db_user.email,
-        "token": token
+        "access_token": access_token,
+        "refresh_token": refresh_token,
     }
