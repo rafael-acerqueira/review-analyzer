@@ -8,6 +8,9 @@ import { deleteReview, listReview } from '../lib/reviewService'
 import ReviewFilters from '../review/components/ReviewFilters'
 import ReviewDetailsModal from '../review/components/ReviewDetailsModal'
 import { useSession } from 'next-auth/react'
+import LogoutButton from '../review/components/LogoutButton'
+import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
 
 
 export default function AdminPage() {
@@ -19,6 +22,7 @@ export default function AdminPage() {
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
+  const router = useRouter()
 
 
   const { data: reviews = [], isLoading, error } = useQuery({
@@ -43,11 +47,17 @@ export default function AdminPage() {
   }
 
   if (isLoading) return <p className="text-center mt-8">Loading...</p>
-  if (error) return <p className="text-red-500 text-center mt-8">{error.message}</p>
+  if (error) {
+    toast.error(error.message || 'Unexpected Error.')
+    router.push('/')
+  }
 
   return (
-    <div className="max-w-6xl mx-auto p-4">
+    <div className="relative max-w-6xl mx-auto p-4">
       <h1 className="text-2xl font-semibold mb-6 text-center">Admin Panel - Reviews</h1>
+      <div className="absolute top-4 right-4">
+        <LogoutButton />
+      </div>
       <div className="overflow-x-auto border rounded-xl shadow-sm">
         <ReviewFilters onApply={setFilters} />
         <table className="min-w-full text-sm">
