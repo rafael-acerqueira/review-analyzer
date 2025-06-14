@@ -5,7 +5,7 @@ from app.models.review import Review
 from app.models.user import User
 from app.database import get_session
 from sqlmodel import Session
-from app.services.review_service import get_reviews, delete_review, create_review
+from app.services.review_service import get_reviews, delete_review
 from app.dependencies import get_current_user
 
 router = APIRouter()

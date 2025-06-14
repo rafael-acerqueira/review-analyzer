@@ -2,7 +2,7 @@ from app.dependencies import get_current_user
 from app.models.user import User
 from app.main import app
 
-def test_post_reviews_200(client):
+def test_post_reviews_200(client, mock_user):
     payload = {
         "text": "The charger was missing and the screen cracked. I want a refund."
     }
@@ -15,7 +15,7 @@ def test_post_reviews_200(client):
     assert "sentiment" in data
     assert 0.0 <= data["polarity"] <= 1.0
 
-def test_create_review_route(client):
+def test_create_review_route(client, mock_user):
     payload = {
         "text": "The camera exceeded my expectations, with excellent battery life and image quality.",
         "sentiment": "positive",
@@ -51,13 +51,13 @@ def test_remove_review_route(client):
         "feedback": "OK",
         "suggestion": ""
     }
-
+    app.dependency_overrides[get_current_user] = mock_admin_user
     create_resp = client.post("/api/v1/reviews", json=payload)
     assert create_resp.status_code == 201
     review_id = create_resp.json()["id"]
 
 
-    app.dependency_overrides[get_current_user] = mock_admin_user
+
 
     delete_resp = client.delete(f"/api/v1/admin/reviews/{review_id}")
     assert delete_resp.status_code == 200
