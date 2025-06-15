@@ -12,12 +12,22 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return NextResponse.json(
+      { detail: 'Authentication token missing.' },
+      { status: 401 }
+    );
+  }
+
 
   try {
     const response = await fetch(`${apiUrl}/api/v1/reviews`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify(body),
     });

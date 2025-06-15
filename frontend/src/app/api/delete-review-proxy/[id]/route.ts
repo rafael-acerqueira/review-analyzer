@@ -21,11 +21,21 @@ export async function DELETE(req: NextRequest, context: any) {
     );
   }
 
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return NextResponse.json(
+      { detail: 'Authentication token missing.' },
+      { status: 401 }
+    );
+  }
+
   try {
     const response = await fetch(`${apiUrl}/api/v1/admin/reviews/${id}`, {
       method: 'DELETE',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
     });
 
