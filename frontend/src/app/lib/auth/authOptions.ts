@@ -51,7 +51,7 @@ export const authOptions: AuthOptions = {
     async signIn({ account, profile }) {
       if (account?.provider === 'google' && profile?.email) {
         try {
-          const res = await fetch(`${process.env.NEXTAUTH_URL}api/auth/google`, {
+          const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

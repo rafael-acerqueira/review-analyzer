@@ -14,6 +14,10 @@ jobs:
     env:
       API_URL: http://127.0.0.1:8000
       DATABASE_URL: sqlite:///./test.db
+      NEXTAUTH_URL: http://localhost:3000
+      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
 
     steps:
       - name: Checkout repository
@@ -39,10 +43,15 @@ jobs:
         working-directory: frontend
         env:
           API_URL: http://127.0.0.1:8000
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: npm run build
 
       - name: Start Next.js app
         working-directory: frontend
+        env:
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: npm start &
 
       - name: Wait for Next.js to be ready
@@ -64,25 +73,16 @@ jobs:
         working-directory: backend
         run: |
           . .venv/bin/activate
-          echo "Starting FastAPI..."
           python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --log-level debug > uvicorn.log 2>&1 &
-
-      - name: List running processes
-        run: ps aux
-
-      - name: Wait a bit for backend
-        run: sleep 10
-
-      - name: Show FastAPI logs
-        working-directory: backend
-        run: cat uvicorn.log
 
       - name: Wait for FastAPI backend to be ready
         run: wait-on tcp:127.0.0.1:8000 --timeout 60000
 
-      - name: Test FastAPI HTTP response
-        run: curl -v http://127.0.0.1:8000
-
       - name: Run Playwright tests
         working-directory: frontend
+        env:
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
         run: npx playwright test
