@@ -10,6 +10,7 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:3000',
+    screenshot: 'only-on-failure',
     trace: 'on-first-retry',
   },
   projects: [
