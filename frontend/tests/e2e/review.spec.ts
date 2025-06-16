@@ -1,40 +1,10 @@
-import { test, expect } from '@playwright/test'
+// frontend/tests/e2e/review.spec.ts
+
+import { test, expect } from '../fixtures/authenticatedUser';
 
 test.describe('Authenticated tests', () => {
-  const password = 'password123';
+  test('submit review and receive the feedback', async ({ page, userEmail }) => {
 
-
-  let randomEmail: string;
-
-  test.beforeAll(async ({ browser }) => {
-
-    const workerId = process.env.TEST_WORKER_INDEX || '0';
-    randomEmail = `user_${Date.now()}_${workerId}@test.com`;
-
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    await page.goto('http://localhost:3000/login');
-    await page.click('button:has-text("Create account")');
-    await page.fill('input[type="email"]', randomEmail);
-    await page.fill('input[type="password"]', password);
-    await page.click('button[type="submit"]');
-
-    await page.waitForURL('http://localhost:3000/login', { timeout: 10000 });
-    await context.close();
-  });
-
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000/login');
-    await page.fill('input[type="email"]', randomEmail);
-    await page.fill('input[type="password"]', password);
-    await page.click('button[type="submit"]');
-    await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
-    await page.waitForSelector('[data-testid="title"]', { timeout: 20000, state: 'attached' });
-    expect(page.url()).toBe('http://localhost:3000/');
-  });
-
-  test('submit review and receive the feedback', async ({ page }) => {
     await page.goto('http://localhost:3000');
     await page.getByPlaceholder('Tell me your thoughts').fill('The pizza was cold and delayed one hour');
     await page.getByRole('button', { name: 'Send for Analysis' }).click();
@@ -44,7 +14,7 @@ test.describe('Authenticated tests', () => {
     if (await confirmBtn.count() > 0) await expect(confirmBtn).toBeAttached();
   });
 
-  test('submit review and receive a suggestion if dont provide enough information', async ({ page }) => {
+  test('submit review and receive a suggestion if dont provide enough information', async ({ page, userEmail }) => {
     await page.goto('http://localhost:3000');
     await page.getByPlaceholder('Tell me your thoughts').fill('This cellphone is not good enough');
     await page.getByRole('button', { name: 'Send for Analysis' }).click();
@@ -55,7 +25,7 @@ test.describe('Authenticated tests', () => {
     if (await confirmBtn.count() > 0) await expect(confirmBtn).toBeAttached();
   });
 
-  test('submit review to analysis but discards', async ({ page }) => {
+  test('submit review to analysis but discards', async ({ page, userEmail }) => {
     await page.goto('http://localhost:3000');
     await page.getByPlaceholder('Tell me your thoughts').fill(
       "The pillow is not good enough because I woke up with a headache, it's too small, and the material is worse than my last one"
