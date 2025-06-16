@@ -1,12 +1,16 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Authenticated tests', () => {
-  let randomEmail: string;
   const password = 'password123';
 
 
+  let randomEmail: string;
+
   test.beforeAll(async ({ browser }) => {
-    randomEmail = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}@test.com`;
+
+    const workerId = process.env.TEST_WORKER_INDEX || '0';
+    randomEmail = `user_${Date.now()}_${workerId}@test.com`;
+
     const context = await browser.newContext();
     const page = await context.newPage();
 
@@ -16,11 +20,9 @@ test.describe('Authenticated tests', () => {
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
 
-
     await page.waitForURL('http://localhost:3000/login', { timeout: 10000 });
     await context.close();
   });
-
 
   test.beforeEach(async ({ page }) => {
     await page.goto('http://localhost:3000/login');
@@ -29,7 +31,6 @@ test.describe('Authenticated tests', () => {
     await page.click('button[type="submit"]');
     await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
     await page.waitForSelector('[data-testid="title"]', { timeout: 20000, state: 'attached' });
-
     expect(page.url()).toBe('http://localhost:3000/');
   });
 
