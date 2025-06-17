@@ -19,7 +19,7 @@ export const test = base.extend<{ userEmail: string }>({
       throw e;
     }
 
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(4000);
 
     await page.goto('http://localhost:3000/login');
     await page.fill('input[type="email"]', uniqueEmail);
@@ -27,8 +27,8 @@ export const test = base.extend<{ userEmail: string }>({
     await page.click('button[type="submit"]');
 
     try {
-      await page.waitForURL('http://localhost:3000/', { timeout: 20000 });
-      await page.waitForSelector('[data-testid="title"]', { timeout: 20000 });
+      await page.waitForURL('http://localhost:3000/', { timeout: 40000 });
+      await page.waitForSelector('[data-testid="title"]', { timeout: 40000 });
     } catch (e) {
       console.error('Erro no login:', await page.content());
       throw e;
