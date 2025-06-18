@@ -60,6 +60,8 @@ jobs:
 
       - name: Build Next.js app
         working-directory: frontend
+        env:
+          API_URL: http://127.0.0.1:8000
         run: npm run build
 
       - name: Setup Python
@@ -102,6 +104,7 @@ jobs:
       - name: Start Next.js app
         working-directory: frontend
         env:
+          API_URL: http://127.0.0.1:800
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: npm start &
