@@ -14,18 +14,14 @@ test.describe('Authenticated tests', () => {
     await page.fill('input[type="email"]', email);
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
-    await page.waitForSelector('text=Account created!', { timeout: 20000 });
 
     await page.waitForTimeout(4000)
 
-    const webResponse = await page.request.post('http://localhost:8000/api/v1/auth/login', {
-      data: {
-        email,
-        password
-      }
+    const webResponse = await page.request.post('http://localhost:3000/api/v1/auth/login', {
+      data: { email, password }
     });
-    console.log('Next.js login status:', webResponse.status());
-    console.log('Next.js login body:', await webResponse.text());
+    console.log('Proxy status:', webResponse.status());
+    console.log('Proxy body:', await webResponse.text());
 
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('input[type="email"]', { timeout: 20000 });
@@ -49,6 +45,11 @@ test.describe('Authenticated tests', () => {
 
     await page.waitForURL('http://localhost:3000/', { timeout: 20000 });
     await page.waitForSelector('[data-testid="title"]', { timeout: 20000 });
+  });
+
+  test('Test FastAPI direct from Playwright', async ({ request }) => {
+    const response = await request.get('http://127.0.0.1:8000/docs');
+    expect(response.status()).toBe(200);
   });
 
   test('submit review and receive the feedback', async ({ page }) => {

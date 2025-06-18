@@ -22,6 +22,7 @@ export async function POST(req: NextRequest) {
     })
 
     console.log('Status:', response.status);
+    console.log('Handler API_URL:', apiUrl);
 
     const data = await response.json()
 

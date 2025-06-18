@@ -32,7 +32,7 @@ jobs:
       DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       DB_NAME: ${{ secrets.DB_NAME }}
       DATABASE_URL: postgresql+psycopg2://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}
-      API_URL: http://127.0.0.1:8000
+      API_URL: http://localhost:8000
       NEXTAUTH_URL: http://localhost:3000
       NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
       GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
@@ -58,10 +58,16 @@ jobs:
       - name: Install wait-on globally
         run: npm install -g wait-on
 
+      - name: Check API_URL before build
+        working-directory: frontend
+        run: echo "API_URL before build is: $API_URL"
+
       - name: Build Next.js app
         working-directory: frontend
         env:
-          API_URL: http://127.0.0.1:8000
+          API_URL: http://localhost:8000
+          NEXTAUTH_URL: http://localhost:3000
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: npm run build
 
       - name: Setup Python
@@ -93,7 +99,7 @@ jobs:
         working-directory: backend
         run: |
           . .venv/bin/activate
-          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --log-level debug > uvicorn.log 2>&1 &
+          python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --log-level debug > uvicorn.log 2>&1 &
 
       - name: Wait for FastAPI backend to be ready
         run: wait-on tcp:127.0.0.1:8000 --timeout 60000
@@ -104,6 +110,9 @@ jobs:
       - name: Print API_URL used by Next.js
         run: echo $API_URL
 
+      - name: Test backend accessibility from runner
+        run: |
+          curl -v http://localhost:8000/docs || curl -v http://127.0.0.1:8000/docs
 
       - name: Print FastAPI env
         working-directory: backend
@@ -114,7 +123,7 @@ jobs:
       - name: Start Next.js app
         working-directory: frontend
         env:
-          API_URL: http://127.0.0.1:8000
+          API_URL: http://localhost:8000
           NEXTAUTH_URL: http://localhost:3000
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
         run: npm start &
@@ -137,3 +146,10 @@ jobs:
         with:
           name: playwright-screenshots
           path: frontend/test-results/
+
+      - name: Upload FastAPI logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uvicorn-log
+          path: backend/uvicorn.log
