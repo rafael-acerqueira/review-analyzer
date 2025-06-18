@@ -94,7 +94,7 @@ export default function AuthForm() {
         </form>
 
         <button
-          onClick={() => signIn('google')}
+          onClick={() => signIn('google', { callbackUrl: '/' })}
           className="w-full flex items-center justify-center border px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
         >
           <FcGoogle className="mr-2 text-xl" /> Continue with Google
