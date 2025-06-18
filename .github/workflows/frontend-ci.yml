@@ -101,6 +101,16 @@ jobs:
       - name: Show environment DATABASE_URL
         run: echo $DATABASE_URL
 
+      - name: Print API_URL used by Next.js
+        run: echo $API_URL
+
+
+      - name: Print FastAPI env
+        working-directory: backend
+        run: |
+          . .venv/bin/activate
+          python -c "import os; print('DATABASE_URL:', os.getenv('DATABASE_URL')); print('API_URL:', os.getenv('API_URL'))"
+
       - name: Start Next.js app
         working-directory: frontend
         env:
