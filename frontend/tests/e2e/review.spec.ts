@@ -18,6 +18,15 @@ test.describe('Authenticated tests', () => {
 
     await page.waitForTimeout(4000)
 
+    const webResponse = await page.request.post('http://localhost:8000/api/v1/auth/login', {
+      data: {
+        email,
+        password
+      }
+    });
+    console.log('Next.js login status:', webResponse.status());
+    console.log('Next.js login body:', await webResponse.text());
+
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('input[type="email"]', { timeout: 20000 });
     await page.fill('input[type="email"]', email);
