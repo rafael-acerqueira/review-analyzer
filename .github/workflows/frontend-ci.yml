@@ -96,6 +96,9 @@ jobs:
       - name: Wait for FastAPI backend to be ready
         run: wait-on tcp:127.0.0.1:8000 --timeout 60000
 
+      - name: Show environment DATABASE_URL
+        run: echo $DATABASE_URL
+
       - name: Start Next.js app
         working-directory: frontend
         env:

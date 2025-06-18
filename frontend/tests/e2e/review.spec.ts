@@ -16,7 +16,7 @@ test.describe('Authenticated tests', () => {
     await page.click('button[type="submit"]');
     await page.waitForSelector('text=Account created!', { timeout: 20000 });
 
-    await page.waitForTimeout(2000)
+    await page.waitForTimeout(4000)
 
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('input[type="email"]', { timeout: 20000 });
@@ -24,6 +24,19 @@ test.describe('Authenticated tests', () => {
     await page.waitForSelector('input[type="password"]', { timeout: 20000 });
     await page.fill('input[type="password"]', password);
     await page.click('button[type="submit"]');
+
+
+    await page.waitForTimeout(1000)
+
+
+    console.log(await page.content());
+
+
+    if (page.url() === 'http://localhost:3000/') {
+      console.log('Login Success!');
+    } else {
+      throw new Error('Login Error');
+    }
 
     await page.waitForURL('http://localhost:3000/', { timeout: 20000 });
     await page.waitForSelector('[data-testid="title"]', { timeout: 20000 });
