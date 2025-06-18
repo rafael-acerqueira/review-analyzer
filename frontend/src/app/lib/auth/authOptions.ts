@@ -35,19 +35,23 @@ export const authOptions: AuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.user = user
+        token.access_token = user.access_token;
+        token.refresh_token = user.refresh_token
       }
       return token
     },
 
     async session({ session, token }) {
       session.user = token.user
+      session.access_token = token.access_token;
+      session.refresh_token = token.refresh_token;
       return session
     },
 
     async signIn({ account, profile }) {
       if (account?.provider === 'google' && profile?.email) {
         try {
-          const res = await fetch(`${process.env.NEXTAUTH_URL}api/auth/google`, {
+          const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({

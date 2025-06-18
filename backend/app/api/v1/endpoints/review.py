@@ -1,5 +1,8 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
+
+from app.dependencies import get_current_user
 from app.schemas import ReviewRequest, ReviewResponse
+from app.models.user import User
 from app.models.review import Review
 from app.database import get_session
 from app.services.review_service import create_review
@@ -12,11 +15,15 @@ from app.services.suggestion_service import SuggestionService
 router = APIRouter()
 
 @router.post("/reviews", status_code=status.HTTP_201_CREATED)
-def create_new_review(review: Review, session: Session = Depends(get_session)) -> Review:
+def create_new_review(review: Review, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)) -> Review:
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Not authorized")
     return create_review(session, review)
 
 @router.post("/analyze_review")
-def analyze_review(request: ReviewRequest) -> ReviewResponse:
+def analyze_review(request: ReviewRequest, current_user: User = Depends(get_current_user)) -> ReviewResponse:
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Not authorized")
     sentiment, polarity  = SentimentAnalysisService.analyze(request.text)
     quality = SuggestionService.evaluate_review(request.text)
 

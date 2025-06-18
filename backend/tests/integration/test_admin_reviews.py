@@ -44,11 +44,11 @@ def test_admin_delete_review():
         "feedback": "Nice",
         "suggestion": ""
     }
+    app.dependency_overrides[get_current_user] = mock_admin_user
     create_resp = client.post("/api/v1/reviews", json=payload)
     assert create_resp.status_code == 201
     review_id = create_resp.json()["id"]
 
-    app.dependency_overrides[get_current_user] = mock_admin_user
     delete_resp = client.delete(f"/api/v1/admin/reviews/{review_id}")
     assert delete_resp.status_code == 200
     app.dependency_overrides.clear()

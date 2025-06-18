@@ -5,6 +5,8 @@ import { useMutation } from '@tanstack/react-query'
 import { submitReviewRequest, createReview } from '../../lib/reviewService'
 import toast, { Toaster } from "react-hot-toast"
 import { motion, AnimatePresence } from 'framer-motion'
+import { useSession } from "next-auth/react"
+import LogoutButton from "./LogoutButton"
 
 interface LLMFeedback {
   sentiment: string
@@ -26,8 +28,12 @@ export default function ReviewForm() {
   const [status, setStatus] = useState('')
   const [sentiment, setSentiment] = useState('')
 
+  const { data: session } = useSession();
+
+  const token = session?.user?.access_token || ""
+
   const mutation = useMutation({
-    mutationFn: () => submitReviewRequest({ text: review }),
+    mutationFn: () => submitReviewRequest({ text: review }, token),
     onSuccess: (data) => {
       setLlmFeedback(data)
       if (originalReview == '') {
@@ -68,8 +74,8 @@ export default function ReviewForm() {
       sentiment: sentiment,
       status: status,
       feedback: feedback,
-      suggestion: suggestion
-    }),
+      suggestion: suggestion,
+    }, token),
     onSuccess: () => {
       toast.success('Review confirmed and saved!')
       setReview('')
@@ -104,11 +110,13 @@ export default function ReviewForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="absolute top-4 right-4">
+        <LogoutButton />
+      </div>
       <div className="max-w-lg w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5">
         <Toaster position="top-right" />
-
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>
+        <h1 data-testid="title" className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <textarea

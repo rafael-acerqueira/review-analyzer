@@ -1,91 +1,107 @@
-import { test, expect } from '@playwright/test'
+import { test, expect } from '@playwright/test';
 
-test('submit review and receive the feedback', async ({ page }) => {
-  await page.goto('http://localhost:3000');
+const password = 'password123';
 
-  await page.getByPlaceholder('Tell me your thoughts').fill(
-    'The pizza was cold and delayed one hour'
-  );
+test.describe('Authenticated tests', () => {
+  let email: string;
 
-  await page.getByRole('button', { name: 'Send for Analysis' }).click();
+  test.beforeEach(async ({ page }) => {
 
-  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
+    email = `user_${Date.now()}_${Math.floor(Math.random() * 10000)}@test.com`;
 
-  await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
+    await page.goto('http://localhost:3000/login');
+    await page.click('button:has-text("Create account")');
+    await page.fill('input[type="email"]', email);
+    await page.fill('input[type="password"]', password);
+    await page.click('button[type="submit"]');
 
-  const confirmBtn = page.getByTestId('confirm-and-submit');
+    await page.waitForTimeout(4000)
 
-  if (await confirmBtn.count() > 0) {
-    console.log('confirm-and-submit found — proceeding...');
-    await expect(confirmBtn).toBeAttached();
-  } else {
-    console.log('confirm-and-submit not found — review likely rejected by LLM.');
-  }
-});
+    const webResponse = await page.request.post('http://localhost:3000/api/v1/auth/login', {
+      data: { email, password }
+    });
+    console.log('Proxy status:', webResponse.status());
+    console.log('Proxy body:', await webResponse.text());
 
-test('submit review and receive a suggestion if dont provide enough information', async ({ page }) => {
-  await page.goto('http://localhost:3000');
+    await page.goto('http://localhost:3000/login');
+    await page.waitForSelector('input[type="email"]', { timeout: 20000 });
+    await page.fill('input[type="email"]', email);
+    await page.waitForSelector('input[type="password"]', { timeout: 20000 });
+    await page.fill('input[type="password"]', password);
+    await page.click('button[type="submit"]');
 
-  await page.getByPlaceholder('Tell me your thoughts').fill(
-    'This cellphone is not good enough'
-  );
 
-  await page.getByRole('button', { name: 'Send for Analysis' }).click();
+    await page.waitForTimeout(1000)
 
-  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
 
-  const suggestionText = page.getByTestId('suggestion-text');
+    console.log(await page.content());
 
-  if (await suggestionText.count() > 0) {
-    console.log('Suggestion text found — review likely rejected.');
-    await expect(suggestionText).toBeAttached();
-  } else {
-    console.log('No suggestion text — review likely accepted.');
-  }
 
-  const confirmBtn = page.getByTestId('confirm-and-submit');
-  if (await confirmBtn.count() > 0) {
-    console.log('confirm-and-submit found — proceeding...');
-    await expect(confirmBtn).toBeAttached();
-  } else {
-    console.log('confirm-and-submit not found — review likely rejected.');
-  }
-});
+    if (page.url() === 'http://localhost:3000/') {
+      console.log('Login Success!');
+    } else {
+      throw new Error('Login Error');
+    }
 
-test('submit review to analysis but discards', async ({ page }) => {
-  await page.goto('http://localhost:3000');
+    await page.waitForURL('http://localhost:3000/', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="title"]', { timeout: 20000 });
+  });
 
-  await page.getByPlaceholder('Tell me your thoughts').fill(
-    "The pillow is not good enough because I woke up with a headache,\
-    it's too small, and the material is worse than my last one"
-  );
+  test('Test FastAPI direct from Playwright', async ({ request }) => {
+    const response = await request.get('http://127.0.0.1:8000/docs');
+    expect(response.status()).toBe(200);
+  });
 
-  await page.getByRole('button', { name: 'Send for Analysis' }).click();
-
-  await page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' });
-
-  await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
-
-  const confirmBtn = page.getByTestId('confirm-and-submit');
-
-  if (await confirmBtn.count() > 0) {
-    console.log('confirm-and-submit found — proceeding with discard flow...');
-    await expect(confirmBtn).toBeAttached();
-
-    const discardBtn = page.getByTestId('discard');
-    await expect(discardBtn).toBeAttached();
-
-    await discardBtn.click();
-
-    await expect(page.getByTestId('send-to-analysis')).toBeAttached();
-    await expect(page.getByPlaceholder('Tell me your thoughts')).toBeEmpty();
-
-    await expect(page.getByTestId('feedback-message')).not.toBeAttached();
+  test('submit review and receive the feedback', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.getByPlaceholder('Tell me your thoughts').fill('The pizza was cold and delayed one hour');
+    const sendBtn = page.getByRole('button', { name: 'Send for Analysis' });
+    await Promise.all([
+      page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' }),
+      sendBtn.click(),
+    ]);
     await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
-    await expect(page.getByTestId('confirm-and-submit')).not.toBeAttached();
-    await expect(page.getByTestId('discard')).not.toBeAttached();
+    const confirmBtn = page.getByTestId('confirm-and-submit');
+    if (await confirmBtn.count() > 0) await expect(confirmBtn).toBeAttached();
+  });
 
-  } else {
-    console.log('confirm-and-submit not found — review likely rejected by LLM.');
-  }
+  test('submit review and receive a suggestion if dont provide enough information', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.getByPlaceholder('Tell me your thoughts').fill('This cellphone is not good enough');
+    const sendBtn = page.getByRole('button', { name: 'Send for Analysis' });
+    await Promise.all([
+      page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' }),
+      sendBtn.click(),
+    ]);
+    const suggestionText = page.getByTestId('suggestion-text');
+    if (await suggestionText.count() > 0) await expect(suggestionText).toBeAttached();
+    const confirmBtn = page.getByTestId('confirm-and-submit');
+    if (await confirmBtn.count() > 0) await expect(confirmBtn).toBeAttached();
+  });
+
+  test('submit review to analysis but discards', async ({ page }) => {
+    await page.goto('http://localhost:3000');
+    await page.getByPlaceholder('Tell me your thoughts').fill(
+      "The pillow is not good enough because I woke up with a headache, it's too small, and the material is worse than my last one"
+    );
+    const sendBtn = page.getByRole('button', { name: 'Send for Analysis' });
+    await Promise.all([
+      page.waitForSelector('[data-testid="feedback-message"]', { timeout: 20000, state: 'attached' }),
+      sendBtn.click(),
+    ]);
+    await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
+    const confirmBtn = page.getByTestId('confirm-and-submit');
+    if (await confirmBtn.count() > 0) {
+      await expect(confirmBtn).toBeAttached();
+      const discardBtn = page.getByTestId('discard');
+      await expect(discardBtn).toBeAttached();
+      await discardBtn.click();
+      await expect(page.getByTestId('send-to-analysis')).toBeAttached();
+      await expect(page.getByPlaceholder('Tell me your thoughts')).toBeEmpty();
+      await expect(page.getByTestId('feedback-message')).not.toBeAttached();
+      await expect(page.getByTestId('suggestion-text')).not.toBeAttached();
+      await expect(page.getByTestId('confirm-and-submit')).not.toBeAttached();
+      await expect(page.getByTestId('discard')).not.toBeAttached();
+    }
+  });
 });

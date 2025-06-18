@@ -11,13 +11,23 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!token) {
+    return NextResponse.json(
+      { detail: 'Authentication token missing.' },
+      { status: 401 }
+    );
+  }
+
   const searchParams = req.nextUrl.searchParams
 
   try {
     const response = await fetch(`${apiUrl}/api/v1/admin/reviews?${searchParams.toString()}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       },
     });
 
