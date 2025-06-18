@@ -21,7 +21,11 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(body),
     })
 
+    console.log('Status:', response.status);
+
     const data = await response.json()
+
+    console.log('Body:', data);
     return NextResponse.json(data, { status: response.status })
   } catch (error: unknown) {
     console.error('[Proxy Error] Login:', error)
