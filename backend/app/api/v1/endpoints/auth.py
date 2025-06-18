@@ -30,8 +30,19 @@ def google_login(user: GoogleUser, session: Session = Depends(get_session)):
         session.add(new_user)
         session.commit()
         session.refresh(new_user)
-        return {"id": new_user.id, "email": new_user.email}
-    raise HTTPException(status_code=400, detail="User already registered")
+        user_to_return = new_user
+    else:
+        user_to_return = existing_user
+
+    access_token = create_access_token({"sub": str(user_to_return.id)})
+    refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
+
+    return {
+        "id": user_to_return.id,
+        "email": user_to_return.email,
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+    }
 
 
 @router.post("/login")
