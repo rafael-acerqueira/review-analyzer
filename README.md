@@ -33,7 +33,17 @@
 
 ## 📸 Demo
 
-> Demo coming soon...
+![Login](assets/login.png)
+<p align="center"><em>Login page</em></p>
+
+![Home](assets/review_analyzer.png)
+<p align="center"><em>Review Analyzer</em></p>
+
+![ReviewList](assets/review_list.png)
+<p align="center"><em>Review List (Admin)</em></p>
+
+![ReviewDetails](assets/review_details.png)
+<p align="center"><em>Review Details</em></p>
 
 ---
 
@@ -90,11 +100,17 @@ npx playwright test
 ```
 review-analyzer/
 ├── backend/
+|   |── alembic
 │   ├── app/
+|   |   |── api/                   # API Endpoints
 │   │   ├── core/                  # API clients (Hugging Face)
+|   |   |── models/                # Models
 │   │   ├── services/              # Business logic: LLM + Sentiment
 │   │   ├── utils/                 # Prompt formatters, extractors
+|   |   |── database.py            # Database Configuration
+|   |   |── dependencies.py        # Get Current User
 │   │   ├── schemas.py             # Pydantic models
+|   |   |── security.py            # Token/Password management
 │   │   └── main.py                # FastAPI entrypoint
 │   ├── tests/
 │   │   ├── unit/                  # Unit tests (mocked services)
@@ -103,15 +119,15 @@ review-analyzer/
 │   └── requirements.txt
 │
 ├── frontend/
-│   ├── app/                       # Next.js pages (App Router)
-│   │   └── api/                   # Proxy to backend
-│   ├── components/                # ReviewForm, FeedbackCard, etc.
-│   ├── lib/                       # reviewService (fetch wrapper)
-│   ├── public/                    # Static assets (logo, etc.)
-│   ├── styles/                    # Tailwind + custom styles
-│   └── tests/
-│       └── e2e/                   # Playwright tests
-│
+|   |── src/app                    # Next.js pages (App Router)
+│   │   |── admin                  # Admin Page
+|   |   |── api                    # Proxy to backend
+|   │   ├── review/components/     # ReviewForm, ReviewFilter, etc.
+|   │   ├── lib/                   # reviewService (fetch wrapper)
+|   │   ├── public/                # Static assets (logo, etc.)
+|   |   |── login/                 # Login Page
+│   |── tests/
+|   |   └── e2e/                   # Playwright tests
 ├── README.md
 ├── .env.example
 └── .gitignore
@@ -123,10 +139,14 @@ review-analyzer/
 
 - [x] ⚙️ Continuous Integration (CI) with Github Actions
 - [x] 🧪 End-to-end tests with Playwright
-- [ ] ✍️ Feedback loop for rejected reviews
-- [ ] 📊 Admin dashboard with filters and stats
-- [ ] 🔐 User authentication + history
-- [ ] 🌐 Multi-language support (i18n)
+- [x] ✍️ Feedback loop for rejected reviews
+- [x] 📊 Admin dashboard with filters and stats
+- [x] 🔐 User authentication (credentials & Google OAuth)
+- [ ] 📝 Review linked to user (user-specific review history)
+- [ ] 📊 Admin statistics by sentiment, status, etc.
+- [ ] 🗃️ User “My Reviews” page (/my-reviews)
+- [ ] 🚀 Public demo deployment
+
 
 ---
 
