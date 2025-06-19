@@ -18,7 +18,6 @@ class UserCreate(BaseModel):
 
 class GoogleUser(BaseModel):
     email: EmailStr
-    provider_id: str
     sub: str
 
 class UserLogin(BaseModel):

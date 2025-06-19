@@ -17,12 +17,6 @@ test.describe('Authenticated tests', () => {
 
     await page.waitForTimeout(4000)
 
-    const webResponse = await page.request.post('http://localhost:3000/api/v1/auth/login', {
-      data: { email, password }
-    });
-    console.log('Proxy status:', webResponse.status());
-    console.log('Proxy body:', await webResponse.text());
-
     await page.goto('http://localhost:3000/login');
     await page.waitForSelector('input[type="email"]', { timeout: 20000 });
     await page.fill('input[type="email"]', email);
@@ -32,16 +26,6 @@ test.describe('Authenticated tests', () => {
 
 
     await page.waitForTimeout(1000)
-
-
-    console.log(await page.content());
-
-
-    if (page.url() === 'http://localhost:3000/') {
-      console.log('Login Success!');
-    } else {
-      throw new Error('Login Error');
-    }
 
     await page.waitForURL('http://localhost:3000/', { timeout: 20000 });
     await page.waitForSelector('[data-testid="title"]', { timeout: 20000 });
