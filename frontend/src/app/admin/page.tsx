@@ -1,35 +1,28 @@
-
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useSession } from 'next-auth/react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { useState } from 'react'
 import { deleteReview, listReview } from '../lib/reviewService'
 import ReviewFilters from '../review/components/ReviewFilters'
 import ReviewDetailsModal from '../review/components/ReviewDetailsModal'
-import { useSession } from 'next-auth/react'
 import LogoutButton from '../review/components/LogoutButton'
 import toast from 'react-hot-toast'
-import { useRouter } from 'next/navigation'
-
 
 export default function AdminPage() {
-
-  const { data: session } = useSession();
-
+  const { data: session } = useSession()
   const token = session?.user?.access_token || ""
-
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
   const router = useRouter()
 
-
   const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['reviews', filters],
     queryFn: () => listReview(filters, token),
   })
-
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => deleteReview(id, token),
@@ -38,19 +31,21 @@ export default function AdminPage() {
     }
   })
 
-
   const handleDelete = async (id: number) => {
     const confirm = window.confirm('Are you sure you want to delete this review?')
     if (!confirm) return
-
     deleteMutation.mutate(id)
   }
 
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message || 'Unexpected Error.')
+      router.push('/')
+    }
+  }, [error, router])
+
   if (isLoading) return <p className="text-center mt-8">Loading...</p>
-  if (error) {
-    toast.error(error.message || 'Unexpected Error.')
-    router.push('/')
-  }
+  if (error) return null
 
   return (
     <div className="relative max-w-6xl mx-auto p-4">
@@ -108,6 +103,5 @@ export default function AdminPage() {
         />
       )}
     </div>
-
   )
 }
