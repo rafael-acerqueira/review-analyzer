@@ -32,8 +32,10 @@ def delete_review(session: Session, review_id: int):
         return True
     return False
 
-def create_review(session: Session, review: Review) -> Review:
-    session.add(review)
+def create_review(session: Session, review: Review, user) -> Review:
+    data = review.model_dump(exclude_unset=True)
+    db_review = Review(**data, user_id=user.id)
+    session.add(db_review)
     session.commit()
-    session.refresh(review)
-    return review
+    session.refresh(db_review)
+    return db_review
