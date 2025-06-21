@@ -1,4 +1,5 @@
 from app.dependencies import get_current_user
+from app.models.review import Review
 from app.models.user import User
 from app.main import app
 
@@ -27,9 +28,41 @@ def test_create_review_route(client, mock_user):
     response = client.post("/api/v1/reviews", json=payload)
     assert response.status_code == 201
     data = response.json()
-    print(data)
+    assert data["user_id"] == mock_user.id
     assert data["id"] > 0
     assert data["text"] == "The camera exceeded my expectations, with excellent battery life and image quality."
+
+def test_authenticated_user_sees_only_their_reviews(client, user_and_token, session):
+
+    user1, token1 = user_and_token("user1@example.com")
+    user2, token2 = user_and_token("user2@example.com")
+
+    review1 = Review(text="review user1", sentiment="POS", status="approved", feedback="", user_id=user1.id)
+    review2 = Review(text="review user2", sentiment="NEG", status="approved", feedback="", user_id=user2.id)
+    session.add_all([review1, review2])
+    session.commit()
+
+
+    response = client.get(
+        "/api/v1/my-reviews",
+        headers={"Authorization": f"Bearer {token1}"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["user_id"] == user1.id
+    assert data[0]["text"] == "review user1"
+
+
+    response = client.get(
+        "/api/v1/my-reviews",
+        headers={"Authorization": f"Bearer {token2}"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 1
+    assert data[0]["user_id"] == user2.id
+    assert data[0]["text"] == "review user2"
 
 def mock_admin_user():
     return User(id=1, email="admin@example.com", role="admin")

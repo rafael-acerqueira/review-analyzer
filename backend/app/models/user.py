@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field, Relationship
 from typing import Optional
 from datetime import datetime, timezone
 
@@ -9,4 +9,5 @@ class User(SQLModel, table=True):
     provider: str = "credentials"
     sub: str | None = None
     role: str = Field(default="user")
+    reviews: list["Review"] = Relationship(back_populates="user")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

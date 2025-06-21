@@ -76,3 +76,13 @@ export async function deleteReview(id: number, token: string) {
   }
   return response.json()
 }
+
+export async function getMyReviews(token: string) {
+  const res = await fetch('/api/my-reviews-proxy', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to fetch your reviews');
+  return res.json();
+}

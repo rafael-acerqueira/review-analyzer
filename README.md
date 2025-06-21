@@ -142,9 +142,9 @@ review-analyzer/
 - [x] ✍️ Feedback loop for rejected reviews
 - [x] 📊 Admin dashboard with filters and stats
 - [x] 🔐 User authentication (credentials & Google OAuth)
-- [ ] 📝 Review linked to user (user-specific review history)
+- [x] 📝 Review linked to user (user-specific review history)
 - [ ] 📊 Admin statistics by sentiment, status, etc.
-- [ ] 🗃️ User “My Reviews” page (/my-reviews)
+- [x] 🗃️ User “My Reviews” page (/my-reviews)
 - [ ] 🚀 Public demo deployment
 
 

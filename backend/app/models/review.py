@@ -1,4 +1,4 @@
-from sqlmodel import SQLModel, Field
+from sqlmodel import SQLModel, Field,Relationship
 from typing import Optional
 from datetime import datetime, timezone
 
@@ -10,4 +10,6 @@ class Review(SQLModel, table=True):
     status: str
     feedback: str
     suggestion: Optional[str] = ""
+    user_id: int = Field(foreign_key="user.id")
+    user: Optional["User"] = Relationship(back_populates="reviews")
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
