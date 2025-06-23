@@ -86,3 +86,13 @@ export async function getMyReviews(token: string) {
   if (!res.ok) throw new Error('Failed to fetch your reviews');
   return res.json();
 }
+
+export async function getStats(token: string) {
+  const res = await fetch('/api/get-stats-proxy', {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  if (!res.ok) throw new Error('Failed to fetch your reviews');
+  return res.json();
+}
