@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { signIn } from 'next-auth/react'
+import { signIn, useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { FcGoogle } from 'react-icons/fc'
 import toast, { Toaster } from 'react-hot-toast'
@@ -13,6 +13,7 @@ export default function AuthForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
+  const { data: session } = useSession()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -29,7 +30,10 @@ export default function AuthForm() {
         toast.error('Invalid credentials or user not found')
       } else {
         toast.success('Welcome back!')
-        router.push('/')
+        if (session?.user.role == 'admin')
+          router.push('/admin')
+        else
+          router.push('/')
       }
       setLoading(false)
     } else {
