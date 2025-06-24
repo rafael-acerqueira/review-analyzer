@@ -40,6 +40,7 @@ def google_login(user: GoogleUser, session: Session = Depends(get_session)):
     return {
         "id": user_to_return.id,
         "email": user_to_return.email,
+        "role": user_to_return.role,
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
@@ -57,6 +58,7 @@ def login(user: UserLogin, session: Session = Depends(get_session)):
     return {
         "id": db_user.id,
         "email": db_user.email,
+        "role": db_user.role,
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
