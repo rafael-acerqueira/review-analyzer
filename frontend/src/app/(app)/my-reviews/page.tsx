@@ -2,9 +2,9 @@
 
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyReviews } from '../lib/reviewService'
+import { getMyReviews } from '../../lib/reviewService'
 import Link from 'next/link'
-import LogoutButton from '../review/components/LogoutButton'
+import LogoutButton from '../../review/components/LogoutButton'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MyReviewsPage() {

@@ -37,6 +37,8 @@ export const authOptions: AuthOptions = {
         token.user = user
         token.access_token = user.access_token;
         token.refresh_token = user.refresh_token
+
+        if (user.role) token.user.role = user.role
       }
       return token
     },

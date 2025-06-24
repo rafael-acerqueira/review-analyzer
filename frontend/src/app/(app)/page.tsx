@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession } from "next-auth/react";
-import ReviewForm from "./review/components/ReviewForm";
+import ReviewForm from "../review/components/ReviewForm";
 import { useRouter } from 'next/navigation'
 import { useEffect } from "react";
 
