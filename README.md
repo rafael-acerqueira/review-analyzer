@@ -39,13 +39,13 @@
 ![Home](assets/review_analyzer.png)
 <p align="center"><em>Review Analyzer</em></p>
 
-![Home Submit](review_analyzer_submit.png)
+![Home Submit](assets/review_analyzer_submit.png)
 <p align="center"><em>Review Analyzer Submit button</em></p>
 
-![My Reviews](my_reviews.png)
+![My Reviews](assets/my_reviews.png)
 <p align="center"><em>My Reviews</em></p>
 
-![Dashboard](dashboard.png)
+![Dashboard](assets/dashboard.png)
 <p align="center"><em>Dashboard</em></p>
 
 ![ReviewList](assets/review_list.png)
