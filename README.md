@@ -86,7 +86,11 @@ npm run dev
 ```
 
 > Ensure `.env.local` has:
-> `BACKEND_API_URL=http://localhost:8000`
+> `API_URL=http://localhost:8000`
+> `NEXTAUTH_URL=http://localhost:3000`
+> `NEXTAUTH_SECRET=your-secret`
+> `GOOGLE_CLIENT_ID=your-google-client`
+> `GOOGLE_CLIENT_SECRET=your-client-secret`
 
 ---
 
