@@ -6,7 +6,6 @@ import { submitReviewRequest, createReview } from '../../lib/reviewService'
 import toast, { Toaster } from "react-hot-toast"
 import { motion, AnimatePresence } from 'framer-motion'
 import { useSession } from "next-auth/react"
-import LogoutButton from "./LogoutButton"
 
 interface LLMFeedback {
   sentiment: string
@@ -111,9 +110,6 @@ export default function ReviewForm() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="absolute top-4 right-4">
-        <LogoutButton />
-      </div>
       <div className="max-w-lg w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5">
         <Toaster position="top-right" />
         <h1 data-testid="title" className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>

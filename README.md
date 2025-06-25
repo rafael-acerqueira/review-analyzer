@@ -39,6 +39,15 @@
 ![Home](assets/review_analyzer.png)
 <p align="center"><em>Review Analyzer</em></p>
 
+![Home Submit](review_analyzer_submit.png)
+<p align="center"><em>Review Analyzer Submit button</em></p>
+
+![My Reviews](my_reviews.png)
+<p align="center"><em>My Reviews</em></p>
+
+![Dashboard](dashboard.png)
+<p align="center"><em>Dashboard</em></p>
+
 ![ReviewList](assets/review_list.png)
 <p align="center"><em>Review List (Admin)</em></p>
 
@@ -77,7 +86,11 @@ npm run dev
 ```
 
 > Ensure `.env.local` has:
-> `BACKEND_API_URL=http://localhost:8000`
+> `API_URL=http://localhost:8000`
+> `NEXTAUTH_URL=http://localhost:3000`
+> `NEXTAUTH_SECRET=your-secret`
+> `GOOGLE_CLIENT_ID=your-google-client`
+> `GOOGLE_CLIENT_SECRET=your-client-secret`
 
 ---
 
@@ -143,9 +156,9 @@ review-analyzer/
 - [x] 📊 Admin dashboard with filters and stats
 - [x] 🔐 User authentication (credentials & Google OAuth)
 - [x] 📝 Review linked to user (user-specific review history)
-- [ ] 📊 Admin statistics by sentiment, status, etc.
+- [x] 📊 Admin statistics by sentiment, status, etc.
 - [x] 🗃️ User “My Reviews” page (/my-reviews)
-- [ ] 🚀 Public demo deployment
+- [x] 🚀 Public demo deployment
 
 
 ---
