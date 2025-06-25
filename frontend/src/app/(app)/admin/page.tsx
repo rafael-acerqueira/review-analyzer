@@ -8,8 +8,8 @@ import { format } from 'date-fns'
 import { deleteReview, listReview } from '../../lib/reviewService'
 import ReviewFilters from '../../review/components/ReviewFilters'
 import ReviewDetailsModal from '../../review/components/ReviewDetailsModal'
-import LogoutButton from '../../review/components/LogoutButton'
-import toast from 'react-hot-toast'
+import toast, { Toaster } from 'react-hot-toast'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
   const { data: session } = useSession()
@@ -28,6 +28,7 @@ export default function AdminPage() {
     mutationFn: (id: number) => deleteReview(id, token),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
+      toast.success('Review deleted.')
     }
   })
 
@@ -44,64 +45,109 @@ export default function AdminPage() {
     }
   }, [error, router])
 
-  if (isLoading) return <p className="text-center mt-8">Loading...</p>
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 flex flex-col items-center"
+        >
+          <span className="text-xl text-blue-900 dark:text-blue-200 font-semibold mb-2">Loading reviews...</span>
+        </motion.div>
+      </div>
+    )
+  }
   if (error) return null
 
   return (
-    <div className="relative max-w-6xl mx-auto p-4">
-      <h1 className="text-2xl font-semibold mb-6 text-center">Admin Panel - Reviews</h1>
-      <div className="absolute top-4 right-4">
-        <LogoutButton />
-      </div>
-      <div className="overflow-x-auto border rounded-xl shadow-sm">
+    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <Toaster position="top-right" />
+
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="max-w-5xl w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 space-y-8"
+      >
+        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
+          Admin Panel - Reviews
+        </h1>
         <ReviewFilters onApply={setFilters} />
-        <table className="min-w-full text-sm">
-          <thead className="bg-gray-100 text-gray-600">
-            <tr>
-              <th className="px-4 py-2">Sentiment</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2">Created</th>
-              <th className="px-4 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {reviews.length > 0 ? (reviews.map((r: any) => (
-              <tr key={r.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-2 text-center">{r.sentiment}</td>
-                <td className="px-4 py-2 text-center">{r.status}</td>
-                <td className="px-4 py-2 text-center">{format(new Date(r.created_at), 'yyyy-MM-dd HH:mm')}</td>
-                <td className="px-4 py-2 text-center">
-                  <div className="flex justify-center gap-2">
-                    <button
-                      onClick={() => setSelectedReview(r)}
-                      className="text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 py-1 rounded"
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleDelete(r.id)}
-                      className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
+
+        <div className="overflow-x-auto border rounded-xl shadow-sm bg-gray-100 dark:bg-gray-700 p-2">
+          <table className="min-w-full text-sm">
+            <thead className="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+              <tr>
+                <th className="px-4 py-2">Sentiment</th>
+                <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Created</th>
+                <th className="px-4 py-2">Actions</th>
               </tr>
-            )))
-              : (
-                <tr className="border-t hover:bg-gray-50">
-                  <td colSpan={7} className='text-center'>No records found!</td>
-                </tr>)}
-          </tbody>
-        </table>
-      </div>
-      {selectedReview && (
-        <ReviewDetailsModal
-          isOpen={!!selectedReview}
-          onClose={() => setSelectedReview(null)}
-          review={selectedReview}
-        />
-      )}
+            </thead>
+            <tbody>
+              <AnimatePresence>
+                {reviews.length > 0 ? (reviews.map((r: any) => (
+                  <motion.tr
+                    key={r.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="border-t dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                  >
+                    <td className="px-4 py-2 text-center">
+                      <span className={`px-2 py-1 rounded-full font-semibold text-xs
+                        ${r.sentiment === 'positive' ? 'bg-green-100 text-green-700'
+                          : r.sentiment === 'negative' ? 'bg-red-100 text-red-700'
+                            : 'bg-gray-200 text-gray-700'}`}>
+                        {r.sentiment}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <span className={`px-2 py-1 rounded-full font-bold uppercase text-xs
+                        ${r.status === 'Accepted' ? 'bg-green-100 text-green-700'
+                          : 'bg-red-100 text-red-700'}`}>
+                        {r.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      {format(new Date(r.created_at), 'yyyy-MM-dd HH:mm')}
+                    </td>
+                    <td className="px-4 py-2 text-center">
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => setSelectedReview(r)}
+                          className="text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 py-1 rounded transition"
+                        >
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDelete(r.id)}
+                          className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded transition"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </motion.tr>
+                )))
+                  : (
+                    <tr className="border-t dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <td colSpan={4} className='text-center text-gray-500 dark:text-gray-300 py-4'>No records found!</td>
+                    </tr>)}
+              </AnimatePresence>
+            </tbody>
+          </table>
+        </div>
+
+        {selectedReview && (
+          <ReviewDetailsModal
+            isOpen={!!selectedReview}
+            onClose={() => setSelectedReview(null)}
+            review={selectedReview}
+          />
+        )}
+      </motion.div>
     </div>
   )
 }

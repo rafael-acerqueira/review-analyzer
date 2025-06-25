@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
 import { getMyReviews } from '../../lib/reviewService'
 import Link from 'next/link'
-import LogoutButton from '../../review/components/LogoutButton'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MyReviewsPage() {
@@ -31,9 +30,6 @@ export default function MyReviewsPage() {
 
   return (
     <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="absolute top-4 right-4">
-        <LogoutButton />
-      </div>
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
