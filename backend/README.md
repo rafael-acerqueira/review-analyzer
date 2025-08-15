@@ -7,5 +7,4 @@ sdk: docker
 pinned: false
 license: mit
 ---
-
 API FastAPI para o Review Analyzer.
