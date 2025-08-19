@@ -4,8 +4,9 @@ import { AuthOptions } from 'next-auth'
 
 function getApiBaseUrl() {
   return (
-    process.env.NEXTAUTH_URL ||
-    "http://localhost:3000"
+    process.env.INTERNAL_API_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    "http://localhost:8000"
   );
 }
 
@@ -22,7 +23,7 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        const url = getApiBaseUrl() + "/api/auth/login";
+        const url = `${getApiBaseUrl()}/api/v1/auth/login`;
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -66,21 +67,6 @@ export const authOptions: AuthOptions = {
     },
 
     async signIn({ account, profile }) {
-      if (account?.provider === "google" && profile?.email) {
-        const url = getApiBaseUrl() + "/api/auth/google";
-        const res = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: profile.email, sub: profile.sub }),
-        });
-
-        if (!res.ok) {
-          const t = await res.text();
-          console.error("[Google Register Error]", t);
-          return false;
-        }
-        return true;
-      }
       return true;
     },
   },
