@@ -67,13 +67,25 @@ export const authOptions: AuthOptions = {
     async signIn({ account, profile }) {
       try {
         if (account?.provider === "google" && profile?.email) {
+          const sub =
+            (account as any)?.providerAccountId ??
+            (profile as any)?.sub;
+
+          if (!sub) {
+            console.error("[events.signIn] sem sub do Google", {
+              providerAccountId: (account as any)?.providerAccountId,
+              profileSub: (profile as any)?.sub,
+            });
+            return;
+          }
+
           const url = `${process.env.NEXTAUTH_URL}/api/auth/google`;
           const res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               email: profile.email,
-              sub: (profile as any).sub,
+              sub,
             }),
           });
 
