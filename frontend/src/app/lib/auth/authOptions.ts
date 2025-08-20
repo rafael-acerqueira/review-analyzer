@@ -2,14 +2,6 @@ import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { AuthOptions } from 'next-auth'
 
-function getApiBaseUrl() {
-  return (
-    process.env.INTERNAL_API_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    "http://localhost:8000"
-  );
-}
-
 export const authOptions: AuthOptions = {
   providers: [
     GoogleProvider({
@@ -23,7 +15,7 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        const url = `${getApiBaseUrl()}/api/v1/auth/login`;
+        const url = `${process.env.NEXTAUTH_URL}/api/auth/login`;
         const res = await fetch(url, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -75,7 +67,7 @@ export const authOptions: AuthOptions = {
     async signIn({ account, profile }) {
       try {
         if (account?.provider === "google" && profile?.email) {
-          const url = `${getApiBaseUrl()}/api/v1/auth/google`;
+          const url = `${process.env.NEXTAUTH_URL}/api/auth/google`;
           const res = await fetch(url, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
