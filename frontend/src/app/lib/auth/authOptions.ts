@@ -71,6 +71,30 @@ export const authOptions: AuthOptions = {
     },
   },
 
+  events: {
+    async signIn({ account, profile }) {
+      try {
+        if (account?.provider === "google" && profile?.email) {
+          const url = `${getApiBaseUrl()}/api/v1/auth/google`;
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: profile.email,
+              sub: (profile as any).sub,
+            }),
+          });
+
+          if (!res.ok && res.status !== 409) {
+            console.error("[events.signIn] upsert google falhou", res.status, await res.text());
+          }
+        }
+      } catch (e) {
+        console.error("[events.signIn] exceção no upsert google", e);
+      }
+    },
+  },
+
 
   pages: {
     signIn: '/auth/login',
