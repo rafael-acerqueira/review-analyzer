@@ -1,6 +1,7 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 from app.models.user import User
 from app.database import get_session
@@ -24,26 +25,56 @@ def register_user(user: UserCreate, session: Session = Depends(get_session)):
 
 @router.post("/google")
 def google_login(user: GoogleUser, session: Session = Depends(get_session)):
-    existing_user = session.exec(select(User).where(User.email == user.email)).first()
-    if not existing_user:
-        new_user = User(email=user.email, provider="google", sub=user.sub)
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
-        user_to_return = new_user
-    else:
-        user_to_return = existing_user
+    try:
+        existing_user = session.exec(
+            select(User).where(User.email == user.email)
+        ).first()
 
-    access_token = create_access_token({"sub": str(user_to_return.id)})
-    refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
+        if not existing_user:
+            new_user = User(email=user.email, provider="google", sub=user.sub)
+            session.add(new_user)
+            session.commit()
+            session.refresh(new_user)
+            user_to_return = new_user
+        else:
+            if existing_user.sub != user.sub:
+                existing_user.sub = user.sub
+                session.commit()
+                session.refresh(existing_user)
+            user_to_return = existing_user
 
-    return {
-        "id": user_to_return.id,
-        "email": user_to_return.email,
-        "role": user_to_return.role,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    }
+        access_token = create_access_token({"sub": str(user_to_return.id)})
+        refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
+
+        return {
+            "id": user_to_return.id,
+            "email": user_to_return.email,
+            "role": user_to_return.role,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+
+    except IntegrityError as e:
+        session.rollback()
+        u = session.exec(select(User).where(User.email == user.email)).first()
+        if not u:
+            raise HTTPException(status_code=500, detail="User upsert failed")
+        access_token = create_access_token({"sub": str(u.id)})
+        refresh_token = create_refresh_token({"sub": str(u.id)})
+        return {
+            "id": u.id,
+            "email": u.email,
+            "role": u.role,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+    except OperationalError as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"db connection error: {str(e)}")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"rollback error: {str(e)}")
+
 
 
 @router.post("/login")
