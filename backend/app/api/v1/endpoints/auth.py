@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 from app.models.user import User
 from app.database import get_session
-from app.schemas import UserCreate, GoogleUser, UserLogin
+from app.schemas import UserCreate, GoogleUser, UserLogin, TokenExchangeIn
 from app.security import hash_password, create_access_token, verify_password, create_refresh_token
 
 router = APIRouter()
@@ -93,3 +93,31 @@ def login(user: UserLogin, session: Session = Depends(get_session)):
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+@router.post("/token/exchange")
+def token_exchange(payload: TokenExchangeIn, session: Session = Depends(get_session)):
+    try:
+        user = session.exec(select(User).where(User.email == payload.email)).first()
+        if user:
+            if getattr(user, "sub", None) != payload.sub:
+                user.sub = payload.sub
+                user.provider = user.provider or "google"
+                session.commit()
+                session.refresh(user)
+        else:
+            user = User(email=payload.email, provider="google", sub=payload.sub)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+        access_token = create_access_token({"sub": str(user.id)})
+        refresh_token = create_refresh_token({"sub": str(user.id)})
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "expires_in": 60 * 60 * 24 * 7}
+
+    except OperationalError as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"db connection error: {e}")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))

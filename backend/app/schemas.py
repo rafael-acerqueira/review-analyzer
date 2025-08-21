@@ -38,3 +38,7 @@ class GoogleUser(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class TokenExchangeIn(BaseModel):
+    email: EmailStr
+    sub: str
