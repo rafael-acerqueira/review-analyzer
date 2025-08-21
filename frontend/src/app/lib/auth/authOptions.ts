@@ -32,13 +32,44 @@ export const authOptions: AuthOptions = {
   ],
 
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, account, profile }) {
       if (user) {
         token.user = user
         token.access_token = user.access_token;
         token.refresh_token = user.refresh_token
 
         if (user.role) token.user.role = user.role
+      }
+
+      if (account?.provider === "google" && profile?.email) {
+        const sub =
+          (account as any)?.providerAccountId ??
+          (profile as any)?.sub ??
+          null;
+
+        if (sub) {
+          try {
+            const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/token/exchange`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: profile.email, sub }),
+            });
+
+            if (res.ok) {
+              const ctype = res.headers.get("content-type") || "";
+              const data = ctype.includes("application/json") ? await res.json() : null;
+              if (data?.access_token) {
+                (token as any).access_token = data.access_token;
+                if (data.refresh_token) (token as any).refresh_token = data.refresh_token;
+              }
+            } else {
+              const msg = await res.text();
+              console.error("[jwt] token-exchange failed", res.status, msg);
+            }
+          } catch (e) {
+            console.error("[jwt] token-exchange exception", e);
+          }
+        }
       }
       return token
     },
