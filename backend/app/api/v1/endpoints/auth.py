@@ -1,12 +1,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from jose import ExpiredSignatureError, JWTError
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 from app.models.user import User
 from app.database import get_session
-from app.schemas import UserCreate, GoogleUser, UserLogin, TokenExchangeIn
-from app.security import hash_password, create_access_token, verify_password, create_refresh_token
+from app.schemas import UserCreate, GoogleUser, UserLogin, TokenExchangeIn, TokensOut, RefreshIn
+from app.security import hash_password, create_access_token, verify_password, create_refresh_token, decode_token
 
 router = APIRouter()
 
@@ -121,3 +122,33 @@ def token_exchange(payload: TokenExchangeIn, session: Session = Depends(get_sess
     except Exception as e:
         session.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/refresh", response_model=TokensOut)
+def refresh_tokens(data: RefreshIn, session: Session = Depends(get_session)):
+
+    token = data.refresh_token
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    try:
+        payload = decode_token(token)
+
+        sub = payload.get("sub")
+        if sub is None:
+            raise HTTPException(status_code=401, detail="Invalid token: missing sub")
+
+        user = session.get(User, int(sub))
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        new_access = create_access_token({"sub": str(user.id)})
+        new_refresh = create_refresh_token({"sub": str(user.id)})
+
+        return TokensOut(access_token=new_access, refresh_token=new_refresh)
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token subject")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")
