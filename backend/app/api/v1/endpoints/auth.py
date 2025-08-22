@@ -1,11 +1,13 @@
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
+from jose import ExpiredSignatureError, JWTError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlmodel import Session, select
 from app.models.user import User
 from app.database import get_session
-from app.schemas import UserCreate, GoogleUser, UserLogin
-from app.security import hash_password, create_access_token, verify_password, create_refresh_token
+from app.schemas import UserCreate, GoogleUser, UserLogin, TokenExchangeIn, TokensOut, RefreshIn
+from app.security import hash_password, create_access_token, verify_password, create_refresh_token, decode_token
 
 router = APIRouter()
 
@@ -24,26 +26,56 @@ def register_user(user: UserCreate, session: Session = Depends(get_session)):
 
 @router.post("/google")
 def google_login(user: GoogleUser, session: Session = Depends(get_session)):
-    existing_user = session.exec(select(User).where(User.email == user.email)).first()
-    if not existing_user:
-        new_user = User(email=user.email, provider="google", sub=user.sub)
-        session.add(new_user)
-        session.commit()
-        session.refresh(new_user)
-        user_to_return = new_user
-    else:
-        user_to_return = existing_user
+    try:
+        existing_user = session.exec(
+            select(User).where(User.email == user.email)
+        ).first()
 
-    access_token = create_access_token({"sub": str(user_to_return.id)})
-    refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
+        if not existing_user:
+            new_user = User(email=user.email, provider="google", sub=user.sub)
+            session.add(new_user)
+            session.commit()
+            session.refresh(new_user)
+            user_to_return = new_user
+        else:
+            if existing_user.sub != user.sub:
+                existing_user.sub = user.sub
+                session.commit()
+                session.refresh(existing_user)
+            user_to_return = existing_user
 
-    return {
-        "id": user_to_return.id,
-        "email": user_to_return.email,
-        "role": user_to_return.role,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    }
+        access_token = create_access_token({"sub": str(user_to_return.id)})
+        refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
+
+        return {
+            "id": user_to_return.id,
+            "email": user_to_return.email,
+            "role": user_to_return.role,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+
+    except IntegrityError as e:
+        session.rollback()
+        u = session.exec(select(User).where(User.email == user.email)).first()
+        if not u:
+            raise HTTPException(status_code=500, detail="User upsert failed")
+        access_token = create_access_token({"sub": str(u.id)})
+        refresh_token = create_refresh_token({"sub": str(u.id)})
+        return {
+            "id": u.id,
+            "email": u.email,
+            "role": u.role,
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+        }
+    except OperationalError as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"db connection error: {str(e)}")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"rollback error: {str(e)}")
+
 
 
 @router.post("/login")
@@ -62,3 +94,61 @@ def login(user: UserLogin, session: Session = Depends(get_session)):
         "access_token": access_token,
         "refresh_token": refresh_token,
     }
+
+
+@router.post("/token/exchange")
+def token_exchange(payload: TokenExchangeIn, session: Session = Depends(get_session)):
+    try:
+        user = session.exec(select(User).where(User.email == payload.email)).first()
+        if user:
+            if getattr(user, "sub", None) != payload.sub:
+                user.sub = payload.sub
+                user.provider = user.provider or "google"
+                session.commit()
+                session.refresh(user)
+        else:
+            user = User(email=payload.email, provider="google", sub=payload.sub)
+            session.add(user)
+            session.commit()
+            session.refresh(user)
+
+        access_token = create_access_token({"sub": str(user.id)})
+        refresh_token = create_refresh_token({"sub": str(user.id)})
+        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "expires_in": 60 * 60 * 24 * 7}
+
+    except OperationalError as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=f"db connection error: {e}")
+    except Exception as e:
+        session.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/refresh", response_model=TokensOut)
+def refresh_tokens(data: RefreshIn, session: Session = Depends(get_session)):
+
+    token = data.refresh_token
+    if not token:
+        raise HTTPException(status_code=401, detail="Missing refresh token")
+
+    try:
+        payload = decode_token(token)
+
+        sub = payload.get("sub")
+        if sub is None:
+            raise HTTPException(status_code=401, detail="Invalid token: missing sub")
+
+        user = session.get(User, int(sub))
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        new_access = create_access_token({"sub": str(user.id)})
+        new_refresh = create_refresh_token({"sub": str(user.id)})
+
+        return TokensOut(access_token=new_access, refresh_token=new_refresh)
+
+    except ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Refresh token expired")
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=401, detail="Invalid token subject")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid refresh token")

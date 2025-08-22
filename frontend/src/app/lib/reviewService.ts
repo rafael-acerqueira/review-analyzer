@@ -11,10 +11,10 @@ export type Review = {
   suggestion?: string
 }
 
-export async function submitReviewRequest(payload: ReviewPayload, token: string) {
+export async function submitReviewRequest(payload: ReviewPayload) {
   const response = await fetch("/api/submit-review-proxy", {
     method: "POST",
-    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
 
@@ -28,10 +28,10 @@ export async function submitReviewRequest(payload: ReviewPayload, token: string)
   return response.json()
 }
 
-export async function createReview(payload: Review, token: string) {
+export async function createReview(payload: Review) {
   const response = await fetch("/api/create-review-proxy", {
     method: "POST",
-    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   })
 
@@ -45,11 +45,11 @@ export async function createReview(payload: Review, token: string) {
   return response.json()
 }
 
-export async function listReview(filters: Record<string, string> = {}, token: string) {
+export async function listReview(filters: Record<string, string> = {}) {
   const query = new URLSearchParams(filters).toString()
   const response = await fetch(`/api/list-review-proxy?${query}`, {
     method: "GET",
-    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }
+    headers: { "Content-Type": "application/json" }
   })
 
   if (!response.ok) {
@@ -62,10 +62,10 @@ export async function listReview(filters: Record<string, string> = {}, token: st
   return response.json()
 }
 
-export async function deleteReview(id: number, token: string) {
+export async function deleteReview(id: number) {
   const response = await fetch(`/api/delete-review-proxy/${id}`, {
     method: "DELETE",
-    headers: { "Content-Type": "application/json", 'Authorization': `Bearer ${token}` },
+    headers: { "Content-Type": "application/json" },
   })
   if (!response.ok) {
     if (response.status == 403) {
@@ -77,21 +77,17 @@ export async function deleteReview(id: number, token: string) {
   return response.json()
 }
 
-export async function getMyReviews(token: string) {
+export async function getMyReviews() {
   const res = await fetch('/api/my-reviews-proxy', {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { "Content-Type": "application/json" }
   });
   if (!res.ok) throw new Error('Failed to fetch your reviews');
   return res.json();
 }
 
-export async function getStats(token: string) {
+export async function getStats() {
   const res = await fetch('/api/get-stats-proxy', {
-    headers: {
-      Authorization: `Bearer ${token}`
-    }
+    headers: { "Content-Type": "application/json" }
   });
   if (!res.ok) throw new Error('Failed to fetch your reviews');
   return res.json();

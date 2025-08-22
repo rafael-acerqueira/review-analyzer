@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import { deleteReview, listReview } from '../../lib/reviewService'
@@ -12,8 +11,7 @@ import toast, { Toaster } from 'react-hot-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
-  const { data: session } = useSession()
-  const token = session?.user?.access_token || ""
+
   const [selectedReview, setSelectedReview] = useState(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
@@ -21,11 +19,11 @@ export default function AdminPage() {
 
   const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['reviews', filters],
-    queryFn: () => listReview(filters, token),
+    queryFn: () => listReview(filters),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => deleteReview(id, token),
+    mutationFn: (id: number) => deleteReview(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['reviews'] })
       toast.success('Review deleted.')

@@ -1,8 +1,7 @@
-import { authOptions } from '@/app/lib/auth/authOptions';
-import { getServerSession } from 'next-auth';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET() {
+export async function POST(req: NextRequest) {
+  const body = await req.json();
 
   const apiUrl = process.env.API_URL;
 
@@ -13,20 +12,14 @@ export async function GET() {
     );
   }
 
-  const session = await getServerSession(authOptions);
-  const accessToken = (session as any)?.access_token;
-
-  if (!accessToken) {
-    return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
-  }
 
   try {
-    const response = await fetch(`${apiUrl}/api/v1/my-reviews`, {
-      method: 'GET',
+    const response = await fetch(`${apiUrl}/api/v1/auth/token/exchange`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+        'Content-Type': 'application/json'
       },
+      body: JSON.stringify(body),
     });
 
     const contentType = response.headers.get('content-type');

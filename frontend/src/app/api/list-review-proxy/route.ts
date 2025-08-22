@@ -1,3 +1,5 @@
+import { authOptions } from '@/app/lib/auth/authOptions';
+import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
@@ -11,13 +13,11 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const session = await getServerSession(authOptions);
+  const accessToken = (session as any)?.access_token;
 
-  if (!token) {
-    return NextResponse.json(
-      { detail: 'Authentication token missing.' },
-      { status: 401 }
-    );
+  if (!accessToken) {
+    return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
   }
 
   const searchParams = req.nextUrl.searchParams
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${accessToken}`
       },
     });
 

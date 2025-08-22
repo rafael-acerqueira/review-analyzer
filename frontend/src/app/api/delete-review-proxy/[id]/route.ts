@@ -1,3 +1,5 @@
+import { authOptions } from '@/app/lib/auth/authOptions';
+import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
 
 
@@ -21,13 +23,11 @@ export async function DELETE(req: NextRequest, context: any) {
     );
   }
 
-  const token = req.headers.get('authorization')?.replace('Bearer ', '');
+  const session = await getServerSession(authOptions);
+  const accessToken = (session as any)?.access_token;
 
-  if (!token) {
-    return NextResponse.json(
-      { detail: 'Authentication token missing.' },
-      { status: 401 }
-    );
+  if (!accessToken) {
+    return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
   }
 
   try {
@@ -35,7 +35,7 @@ export async function DELETE(req: NextRequest, context: any) {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
+        'Authorization': `Bearer ${accessToken}`
       }
     });
 

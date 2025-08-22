@@ -12,7 +12,7 @@ export default function MyReviewsPage() {
 
   const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['my-reviews'],
-    queryFn: () => getMyReviews(token),
+    queryFn: () => getMyReviews(),
     enabled: !!token
   })
 

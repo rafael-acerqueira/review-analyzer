@@ -38,3 +38,16 @@ class GoogleUser(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+class TokenExchangeIn(BaseModel):
+    email: EmailStr
+    sub: str
+
+class RefreshIn(BaseModel):
+    refresh_token: str
+
+class TokensOut(BaseModel):
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+    expires_in: int = 15 * 60

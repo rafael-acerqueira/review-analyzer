@@ -2,7 +2,6 @@
 
 import { getStats } from '@/app/lib/reviewService'
 import { useQuery } from '@tanstack/react-query'
-import { useSession } from 'next-auth/react'
 import Link from 'next/link'
 import { SentimentPie } from '../components/SentimentPie'
 import { StatusBar } from '../components/StatusBar'
@@ -10,11 +9,9 @@ import { motion } from 'framer-motion'
 import { Toaster } from 'react-hot-toast'
 
 export default function AdminDashboard() {
-  const { data: session } = useSession()
-  const token = session?.user?.access_token || ""
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin-stats'],
-    queryFn: () => getStats(token),
+    queryFn: () => getStats(),
   })
 
   if (isLoading) return (
