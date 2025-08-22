@@ -27,12 +27,8 @@ export default function ReviewForm() {
   const [status, setStatus] = useState('')
   const [sentiment, setSentiment] = useState('')
 
-  const { data: session } = useSession();
-
-  const token = session?.user?.access_token || ""
-
   const mutation = useMutation({
-    mutationFn: () => submitReviewRequest({ text: review }, token),
+    mutationFn: () => submitReviewRequest({ text: review }),
     onSuccess: (data) => {
       setLlmFeedback(data)
       if (originalReview == '') {
@@ -74,7 +70,7 @@ export default function ReviewForm() {
       status: status,
       feedback: feedback,
       suggestion: suggestion,
-    }, token),
+    }),
     onSuccess: () => {
       toast.success('Review confirmed and saved!')
       setReview('')
