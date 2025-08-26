@@ -7,16 +7,16 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function MyReviewsPage() {
-  const { data: session } = useSession()
-  const token = session?.user?.access_token || ""
+  const { status } = useSession()
+  const isAuthed = status === 'authenticated'
 
   const { data: reviews = [], isLoading, error } = useQuery({
     queryKey: ['my-reviews'],
     queryFn: () => getMyReviews(),
-    enabled: !!token
+    enabled: isAuthed
   })
 
-  if (!token) {
+  if (!isAuthed) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
         <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5 text-center">
