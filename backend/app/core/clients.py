@@ -14,7 +14,7 @@ HF_MODEL = "microsoft/phi-4"
 
 
 client = InferenceClient(
-    provider="hf-inference",
+    provider="nebius",
     api_key=HF_TOKEN,
 )
 
