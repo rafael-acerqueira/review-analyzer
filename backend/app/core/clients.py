@@ -9,12 +9,12 @@ load_dotenv()
 sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-HF_MODEL = "microsoft/phi-4"
+HF_MODEL = "Qwen/Qwen2.5-7B-Instruct"
 
 
 
 client = InferenceClient(
-    provider="nebius",
+    provider="together",
     api_key=HF_TOKEN,
 )
 
