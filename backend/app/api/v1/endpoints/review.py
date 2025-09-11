@@ -14,14 +14,14 @@ from app.services.suggestion_service import SuggestionService
 
 router = APIRouter()
 
-@router.post("/reviews", status_code=status.HTTP_201_CREATED)
+@router.post("/reviews", status_code=status.HTTP_201_CREATED, response_model=ReviewRead)
 def create_new_review(review: Review, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)) -> Review:
     if not current_user:
         raise HTTPException(status_code=403, detail="Not authorized")
     return create_review(session, review, current_user)
 
 @router.get("/my-reviews", response_model=list[ReviewRead])
-def get_my_reviews(session: Session = Depends(get_session), user: User = Depends(get_current_user)):
+def get_my_reviews(session: Session = Depends(get_session), user: User = Depends(get_current_user)) -> ReviewRead:
     reviews = session.exec(select(Review).where(Review.user_id == user.id)).all()
     return reviews
 
