@@ -74,6 +74,7 @@ export default function ReviewForm() {
     onSuccess: () => {
       toast.success('Review confirmed and saved!')
       setReview('')
+      setOriginalReview('')
       setCorrectedText('')
       setApproved(false)
       setLlmFeedback(null)
