@@ -1,3 +1,5 @@
+from typing import List, Optional
+
 from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 
@@ -50,3 +52,17 @@ class TokensOut(BaseModel):
     refresh_token: str
     token_type: str = "bearer"
     expires_in: int = 15 * 60
+
+class RagSearchIn(BaseModel):
+    text: str
+    k: int = 5
+    min_score: Optional[float] = None
+
+class RagHit(BaseModel):
+    id: int
+    text: str
+    score: float
+
+class RagSearchOut(BaseModel):
+    results: List[RagHit]
+    model_config = ConfigDict(from_attributes=True)
