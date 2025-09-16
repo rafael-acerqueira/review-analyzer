@@ -1,4 +1,6 @@
 from sqlmodel import select, Session
+
+from app.embeddings import embed_text_passage
 from app.models.review import Review
 from typing import List, Optional
 from datetime import datetime
@@ -38,4 +40,25 @@ def create_review(session: Session, review: Review, user) -> Review:
     session.add(db_review)
     session.commit()
     session.refresh(db_review)
+
+    final_text = _final_approved_text(db_review)
+    if final_text:
+        try:
+            vec = embed_text_passage(final_text)
+            if hasattr(vec, "tolist"):
+                vec = vec.tolist()
+            db_review.embedding = vec
+            session.add(db_review)
+            session.commit()
+            session.refresh(db_review)
+        except Exception as e:
+            print(f"[embedding] fail trying to index review_id={db_review.id}: {e}")
+
     return db_review
+
+def _final_approved_text(r: Review) -> str | None:
+    ct = (r.corrected_text or "").strip()
+    if ct:
+        return ct
+    t = (r.text or "").strip()
+    return t if t else None
