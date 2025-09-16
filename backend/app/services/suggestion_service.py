@@ -1,3 +1,7 @@
+from typing import Optional
+
+from sqlmodel import Session
+
 from app.utils.prompts import suggestion_prompt_template
 from app.core.clients import call_llm
 from app.services.retriever import search_similar_reviews
@@ -14,9 +18,11 @@ def _render_examples_block(hits: list[dict]) -> str:
 
 class SuggestionService:
     @staticmethod
-    def evaluate_review(text: str, session, k: int=5, min_score: float=0.7):
+    def evaluate_review(text: str,  session: Optional[Session] = None, k: int=5, min_score: float=0.7):
 
-        hits = search_similar_reviews(session=session, query_text=text, k=k, min_score=min_score)
+        hits = []
+        if session is not None:
+            hits = search_similar_reviews(session=session, query_text=text, k=k, min_score=min_score)
         examples_block = _render_examples_block(hits)
 
         prompt = suggestion_prompt_template(review_text=text, examples_block=examples_block)

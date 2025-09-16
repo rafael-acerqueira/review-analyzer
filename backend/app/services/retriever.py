@@ -8,6 +8,9 @@ from app.models.review import Review
 from app.embeddings import embed_text_query
 
 
+def _is_postgres(session: Session) -> bool:
+    return session.get_bind().dialect.name.startswith("postgres")
+
 def _to_list(x: Sequence[float]) -> list[float]:
     try:
         return [float(v) for v in x]
@@ -37,7 +40,11 @@ def search_similar_reviews(
 
     qemb_vec = sa.cast(sa.literal(_to_vector_literal(qemb), sa.String()), Vector(dim))
 
-    session.exec(text("SET LOCAL ivfflat.probes = 10"))
+    if _is_postgres(session):
+        try:
+            session.exec(text("SET ivfflat.probes = 10"))
+        except Exception:
+            pass
 
     dist_expr = sa.cast(Review.embedding.op("<=>")(qemb_vec), sa.Float).label("distance")
 
