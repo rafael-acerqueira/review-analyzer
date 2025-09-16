@@ -1,37 +1,38 @@
-def suggestion_prompt_template(review_text: str) -> str:
+def suggestion_prompt_template(review_text: str, examples_block: str) -> str:
     return f"""
-You are an expert in evaluating product reviews.
+    You are an expert in evaluating product reviews.
+    Follow these rules strictly:
+    - Do NOT invent facts; use ONLY the user's draft and the APPROVED EXAMPLES provided.
+    - If information is missing in the draft, ask the user to include it (in the feedback).
+    - Output MUST be a single valid JSON object (no markdown fences, no extra text).
 
-Your task is to analyze the text of a review written by a user and classify whether it should be accepted or rejected, following the criteria below:
+    Acceptance Criteria:
+    - Clear, specific, useful for other buyers.
+    - At least 20 words.
+    - Describes a specific experience with the product.
 
-Criteria for Accepting:
-- The review is clear, specific, and useful for other buyers.
-- Contains at least 20 words.
-- Describes a specific experience with the product.
+    Rejection Criteria:
+    - Too short, generic, or uninformative.
+    - Fewer than 20 words or vague terms like "good", "bad", "nice".
 
-Criteria for Rejecting:
-- It is too short, generic, or uninformative.
-- Contains fewer than 20 words or vague terms such as "good", "bad", "nice".
+    USER DRAFT:
+    ---
+    {review_text}
+    ---
 
-Respond ONLY with a valid JSON object like this — no labels, no markdown, no explanations:
+    APPROVED EXAMPLES (from my database):
+    {examples_block}
 
-{{
-  "status": "Accepted" or "Rejected",
-  "feedback": "Short and clear message to the user",
-  "suggestion": "Suggestion on how to improve the review, if applicable. If the review is accepted, leave this field as an empty string."
-}}
+    TASK:
+    1) Classify as "Accepted" or "Rejected" with a short reason.
+    2) If rejected, list what is missing (bullets) and provide an improved suggestion WITHOUT adding facts not present in the draft.
+    3) Cite the example IDs you leveraged (if any).
 
-Example expected response:
-
-{{
-  "status": "Rejected",
-  "feedback": "Your review is too generic. Please provide more details.",
-  "suggestion": "Explain what exactly you didn't like and how the product could be improved."
-}}
-
-DO NOT include the word "json", do NOT wrap the output in triple backticks, and do NOT explain anything.
-
-Now rate the following review:
-
-\"\"\"{review_text}\"\"\"
-"""
+    Respond ONLY with JSON in this shape:
+    {{
+      "status": "Accepted" or "Rejected",
+      "feedback": "Short and clear message to the user",
+      "suggestion": "Improved rewrite if rejected, else empty string",
+      "examples_used": ["75","62"]  // IDs you relied on; empty if none
+    }}
+    """

@@ -26,11 +26,11 @@ def get_my_reviews(session: Session = Depends(get_session), user: User = Depends
     return reviews
 
 @router.post("/analyze_review")
-def analyze_review(request: ReviewRequest, current_user: User = Depends(get_current_user)) -> ReviewResponse:
+def analyze_review(request: ReviewRequest, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)) -> ReviewResponse:
     if not current_user:
         raise HTTPException(status_code=403, detail="Not authorized")
     sentiment, polarity  = SentimentAnalysisService.analyze(request.text)
-    quality = SuggestionService.evaluate_review(request.text)
+    quality = SuggestionService.evaluate_review(text=request.text, session=session)
 
     return ReviewResponse(
         text=request.text,
