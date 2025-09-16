@@ -5,12 +5,14 @@ from app.models.review import Review
 from app.models.user import User
 from app.database import get_session
 from sqlmodel import Session, select, func
+
+from app.schemas import ReviewRead
 from app.services.review_service import get_reviews, delete_review
 from app.dependencies import get_current_user
 
 router = APIRouter()
 
-@router.get("/reviews", response_model=List[Review])
+@router.get("/reviews", response_model=List[ReviewRead])
 def list_reviews(
         current_user: User = Depends(get_current_user),
         sentiment: Optional[str] = None,

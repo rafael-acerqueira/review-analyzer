@@ -40,11 +40,13 @@ def search_similar_reviews(
 
     qemb_vec = sa.cast(sa.literal(_to_vector_literal(qemb), sa.String()), Vector(dim))
 
-    if _is_postgres(session):
-        try:
-            session.exec(text("SET ivfflat.probes = 10"))
-        except Exception:
-            pass
+    if not _is_postgres(session):
+        return []
+
+    try:
+        session.exec(text("SET ivfflat.probes = 10"))
+    except Exception:
+        pass
 
     dist_expr = sa.cast(Review.embedding.op("<=>")(qemb_vec), sa.Float).label("distance")
 
