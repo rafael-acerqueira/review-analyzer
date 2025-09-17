@@ -17,17 +17,31 @@
 - ✅ Full backend powered by FastAPI
 - ✅ Unit, integration and (soon) E2E testing with pytest and Playwright
 - ✅ Secure API proxy to hide AI keys from frontend
+- ✅ Retrieval-Augmented Generation (RAG) com `pgvector` para buscar reviews similares e enriquecer as respostas da LLM
+
 
 ---
 
 ## 🧰 Tech Stack
 
 - **Frontend:** Next.js, TypeScript, React Query, TailwindCSS
-- **Backend:** FastAPI, Hugging Face Transformers, Python
+- **Backend:** FastAPI, Hugging Face Transformers, Python, pgvector (Postgres)
 - **LLM:** Hugging Face Inference API (`phi-4`)
 - **Sentiment Model:** `distilbert-base-uncased-finetuned-sst-2-english`
 - **Testing:** pytest, Playwright
 - **Infra:** Render, Vercel
+
+---
+
+## 🧩 Retrieval-Augmented Generation (RAG)
+
+The Review Analyzer now supports RAG (Retrieval-Augmented Generation) to enhance the review analysis process.
+
+1. Converts the new review into an embedding vector
+2. Searches in the database (Postgres + pgvector) for semantically similar reviews.
+3. Provides these reviews as additional context to the LLM.
+
+This approach increases relevance, consistency, and accuracy of the responses, avoiding generic answers.
 
 ---
 
@@ -158,6 +172,7 @@ review-analyzer/
 - [x] 📝 Review linked to user (user-specific review history)
 - [x] 📊 Admin statistics by sentiment, status, etc.
 - [x] 🗃️ User “My Reviews” page (/my-reviews)
+- [x] 🧩 RAG integration (pgvector + LLM)
 - [x] 🚀 Public demo deployment
 
 
