@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+RUN chmod +x /root/.local/bin/uv /root/.local/bin/uvx
 ENV PATH="/root/.local/bin:${PATH}"
 
 WORKDIR /app
