@@ -36,20 +36,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v5
 
-      - name: Setup Python
-        uses: actions/setup-python@v4
+      - name: Install uv & Python 3.10
+        uses: astral-sh/setup-uv@v6
         with:
           python-version: '3.10'
+          enable-cache: true
 
-      - name: Install backend dependencies
+      - run: |
+          uv --version
+          python --version
+
+      - name: Sync deps (with dev)
         working-directory: backend
-        run: |
-          python -m venv .venv
-          source .venv/bin/activate
-          pip install -r requirements.txt
-          pip install -r requirements-dev.txt
+        run: uv sync --locked
 
       - name: Wait for PostgreSQL to be ready
         run: |
@@ -60,12 +61,11 @@ jobs:
 
       - name: Run Alembic migrations
         working-directory: backend
-        run: |
-          source .venv/bin/activate
-          alembic upgrade head
+        run: uv run alembic upgrade head
 
       - name: Run Backend Tests
         working-directory: backend
-        run: |
-          source .venv/bin/activate
-          PYTHONPATH=. pytest
+        run: uv run pytest
+
+      - name: Prune uv cache
+        run: uv cache prune --ci

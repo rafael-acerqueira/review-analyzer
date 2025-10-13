@@ -1,32 +1,26 @@
-FROM python:3.11-slim
+# syntax=docker/dockerfile:1
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential curl git ca-certificates \
-  && rm -rf /var/lib/apt/lists/*
+FROM python:3.12-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PIP_NO_CACHE_DIR=1 \
+ENV UV_LINK_MODE=copy \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-    HF_HOME=/tmp/huggingface \
-    TRANSFORMERS_CACHE=/tmp/huggingface/transformers \
-    HF_HUB_CACHE=/tmp/huggingface/hub \
-    XDG_CACHE_HOME=/tmp \
-    HF_HUB_DISABLE_SYMLINKS_WARNING=1
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 WORKDIR /app
 
-COPY requirements-app.txt /app/requirements-app.txt
+COPY pyproject.toml uv.lock ./
 
-RUN pip install --upgrade pip && \
-    pip install -r /app/requirements-app.txt && \
-    pip install safetensors
+RUN uv sync --frozen --no-dev --no-editable
 
+COPY . .
 
-RUN pip install --index-url https://download.pytorch.org/whl/cpu torch==2.7.0
+EXPOSE 7860
 
-COPY . /app
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:${PORT:-7860}/docs || exit 1
 
-ENV PORT=7860
-
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT}"]
+CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "${PORT:-7860}"]
