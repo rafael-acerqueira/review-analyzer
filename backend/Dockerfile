@@ -22,16 +22,30 @@ RUN uv sync --frozen --no-dev --no-editable
 COPY . .
 
 ENV HF_HOME=/app/.cache/huggingface \
-    HUGGINGFACE_HUB_CACHE=/app/.cache/huggingface \
-    TRANSFORMERS_CACHE=/app/.cache/huggingface \
     SENTENCE_TRANSFORMERS_HOME=/app/.cache/sentencetransformers \
-    TORCH_HOME=/app/.cache/torch
-RUN mkdir -p $HF_HOME $SENTENCE_TRANSFORMERS_HOME $TORCH_HOME
+    TORCH_HOME=/app/.cache/torch \
+    HF_HUB_DISABLE_TELEMETRY=1
+
+RUN mkdir -p $HF_HOME $SENTENCE_TRANSFORMERS_HOME $TORCH_HOME \
+ && chmod -R a+rwX /app/.cache \
+ && chown -R 1000:1000 /app/.cache
 
 RUN /app/.venv/bin/python - <<'PY'
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+
 SentenceTransformer("intfloat/multilingual-e5-small")
+
+name = "distilbert-base-uncased-finetuned-sst-2-english"
+AutoTokenizer.from_pretrained(name)
+try:
+    AutoModelForSequenceClassification.from_pretrained(name)
+except:
+    AutoModelForSequenceClassification.from_pretrained(name, from_tf=True)
 PY
+
+RUN chmod -R a+rwX /app/.cache \
+ && chown -R 1000:1000 /app/.cache
 
 EXPOSE 7860
 
