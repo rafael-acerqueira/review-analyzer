@@ -10,8 +10,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-RUN chmod +x /root/.local/bin/uv /root/.local/bin/uvx
-ENV PATH="/root/.local/bin:${PATH}"
+
+RUN install -m 0755 /root/.local/bin/uv /usr/local/bin/uv && \
+    install -m 0755 /root/.local/bin/uvx /usr/local/bin/uvx
 
 WORKDIR /app
 
@@ -23,6 +24,7 @@ COPY . .
 
 EXPOSE 7860
 
-HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://localhost:${PORT:-7860}/docs || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 \
+  CMD curl -f "http://localhost:${PORT:-7860}/docs" || exit 1
 
 CMD sh -c 'uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}'
