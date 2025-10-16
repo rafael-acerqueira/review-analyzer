@@ -1,154 +1,113 @@
-from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException, status
 
-from fastapi import APIRouter, Depends, HTTPException
-from jose import ExpiredSignatureError, JWTError
-from sqlalchemy.exc import IntegrityError, OperationalError
-from sqlmodel import Session, select
-from app.models.user import User
-from app.database import get_session
-from app.schemas import UserCreate, GoogleUser, UserLogin, TokenExchangeIn, TokensOut, RefreshIn
-from app.security import hash_password, create_access_token, verify_password, create_refresh_token, decode_token
+from app.schemas import (
+    UserCreate,
+    GoogleUser,
+    UserLogin,
+    TokenExchangeIn,
+    TokensOut,
+    RefreshIn,
+)
+
+from app.api.v1.deps import (
+    get_register_use_case,
+    get_login_use_case,
+    get_google_login_use_case,
+    get_token_exchange_use_case,
+    get_refresh_tokens_use_case,
+)
+
+from app.domain.auth.use_cases import (
+    RegisterUser,
+    LoginUser,
+    GoogleLogin,
+    TokenExchange,
+    RefreshTokens,
+)
+from app.domain.auth.exceptions import (
+    UserAlreadyExists,
+    InvalidCredentials,
+    UserNotFound,
+    TokenInvalid,
+    TokenExpired,
+    # DBFailure  # se você decidir propagar falhas de infra
+)
 
 router = APIRouter()
 
-@router.post("/register")
-def register_user(user: UserCreate, session: Session = Depends(get_session)):
-    existing_user = session.exec(select(User).where(User.email == user.email)).first()
-    if existing_user:
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+def register_user(
+    payload: UserCreate,
+    use_case: RegisterUser = Depends(get_register_use_case),
+):
+    try:
+        user = use_case.execute(email=payload.email, password=payload.password)
+        return {"id": user.id, "email": user.email}
+    except UserAlreadyExists:
         raise HTTPException(status_code=400, detail="User already registered")
 
-    hashed_pw = hash_password(user.password)
-    new_user = User(email=user.email, hashed_password=hashed_pw)
-    session.add(new_user)
-    session.commit()
-    session.refresh(new_user)
-    return {"id": new_user.id, "email": new_user.email}
+
 
 @router.post("/google")
-def google_login(user: GoogleUser, session: Session = Depends(get_session)):
-    try:
-        existing_user = session.exec(
-            select(User).where(User.email == user.email)
-        ).first()
+def google_login(
+    payload: GoogleUser,
+    use_case: GoogleLogin = Depends(get_google_login_use_case),
+):
 
-        if not existing_user:
-            new_user = User(email=user.email, provider="google", sub=user.sub)
-            session.add(new_user)
-            session.commit()
-            session.refresh(new_user)
-            user_to_return = new_user
-        else:
-            if existing_user.sub != user.sub:
-                existing_user.sub = user.sub
-                session.commit()
-                session.refresh(existing_user)
-            user_to_return = existing_user
-
-        access_token = create_access_token({"sub": str(user_to_return.id)})
-        refresh_token = create_refresh_token({"sub": str(user_to_return.id)})
-
-        return {
-            "id": user_to_return.id,
-            "email": user_to_return.email,
-            "role": user_to_return.role,
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-        }
-
-    except IntegrityError as e:
-        session.rollback()
-        u = session.exec(select(User).where(User.email == user.email)).first()
-        if not u:
-            raise HTTPException(status_code=500, detail="User upsert failed")
-        access_token = create_access_token({"sub": str(u.id)})
-        refresh_token = create_refresh_token({"sub": str(u.id)})
-        return {
-            "id": u.id,
-            "email": u.email,
-            "role": u.role,
-            "access_token": access_token,
-            "refresh_token": refresh_token,
-        }
-    except OperationalError as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"db connection error: {str(e)}")
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"rollback error: {str(e)}")
-
-
+    result = use_case.execute(email=payload.email, sub=payload.sub)
+    return {
+        "id": result.id,
+        "email": result.email,
+        "role": result.role,
+        "access_token": result.access_token,
+        "refresh_token": result.refresh_token,
+    }
 
 @router.post("/login")
-def login(user: UserLogin, session: Session = Depends(get_session)):
-    db_user = session.exec(select(User).where(User.email == user.email)).first()
-    if not db_user or not verify_password(user.password, db_user.hashed_password):
+def login(
+    payload: UserLogin,
+    use_case: LoginUser = Depends(get_login_use_case),
+):
+    try:
+        result = use_case.execute(email=payload.email, password=payload.password)
+        return {
+            "id": result.id,
+            "email": result.email,
+            "role": result.role,
+            "access_token": result.access_token,
+            "refresh_token": result.refresh_token,
+        }
+    except InvalidCredentials:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    access_token = create_access_token({"sub": str(db_user.id)})
-    refresh_token = create_refresh_token({"sub": str(db_user.id)})
-
-    return {
-        "id": db_user.id,
-        "email": db_user.email,
-        "role": db_user.role,
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-    }
 
 
 @router.post("/token/exchange")
-def token_exchange(payload: TokenExchangeIn, session: Session = Depends(get_session)):
-    try:
-        user = session.exec(select(User).where(User.email == payload.email)).first()
-        if user:
-            if getattr(user, "sub", None) != payload.sub:
-                user.sub = payload.sub
-                user.provider = user.provider or "google"
-                session.commit()
-                session.refresh(user)
-        else:
-            user = User(email=payload.email, provider="google", sub=payload.sub)
-            session.add(user)
-            session.commit()
-            session.refresh(user)
+def token_exchange(
+    payload: TokenExchangeIn,
+    use_case: TokenExchange = Depends(get_token_exchange_use_case),
+):
 
-        access_token = create_access_token({"sub": str(user.id)})
-        refresh_token = create_refresh_token({"sub": str(user.id)})
-        return {"access_token": access_token, "refresh_token": refresh_token, "token_type": "bearer", "expires_in": 60 * 60 * 24 * 7}
+    result = use_case.execute(email=payload.email, sub=payload.sub)
 
-    except OperationalError as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=f"db connection error: {e}")
-    except Exception as e:
-        session.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+    return {
+        "access_token": result.access_token,
+        "refresh_token": result.refresh_token,
+        "token_type": "bearer",
+        "expires_in": 60 * 60 * 24 * 7,
+    }
 
 @router.post("/refresh", response_model=TokensOut)
-def refresh_tokens(data: RefreshIn, session: Session = Depends(get_session)):
-
-    token = data.refresh_token
-    if not token:
-        raise HTTPException(status_code=401, detail="Missing refresh token")
+def refresh_tokens(
+    payload: RefreshIn,
+    use_case: RefreshTokens = Depends(get_refresh_tokens_use_case),
+):
 
     try:
-        payload = decode_token(token)
-
-        sub = payload.get("sub")
-        if sub is None:
-            raise HTTPException(status_code=401, detail="Invalid token: missing sub")
-
-        user = session.get(User, int(sub))
-        if not user:
-            raise HTTPException(status_code=401, detail="User not found")
-
-        new_access = create_access_token({"sub": str(user.id)})
-        new_refresh = create_refresh_token({"sub": str(user.id)})
-
-        return TokensOut(access_token=new_access, refresh_token=new_refresh)
-
-    except ExpiredSignatureError:
+        result = use_case.execute(refresh_token=payload.refresh_token)
+        return TokensOut(access_token=result.access_token, refresh_token=result.refresh_token)
+    except TokenExpired:
         raise HTTPException(status_code=401, detail="Refresh token expired")
-    except (ValueError, TypeError):
-        raise HTTPException(status_code=401, detail="Invalid token subject")
-    except JWTError:
+    except TokenInvalid:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
+    except UserNotFound:
+        raise HTTPException(status_code=401, detail="User not found")
