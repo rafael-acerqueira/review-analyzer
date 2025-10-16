@@ -14,7 +14,8 @@ from app.domain.auth.use_cases import (
 
 def _get_session_dep():
     from app.database import get_session  # lazy import
-    return get_session()
+    for session in get_session():
+        yield session
 
 
 def get_db(session: Session = Depends(_get_session_dep)) -> Session:

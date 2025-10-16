@@ -30,7 +30,6 @@ from app.domain.auth.exceptions import (
     UserNotFound,
     TokenInvalid,
     TokenExpired,
-    # DBFailure  # se você decidir propagar falhas de infra
 )
 
 router = APIRouter()
