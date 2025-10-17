@@ -8,6 +8,7 @@ class ReviewEntity:
     id: int
     user_id: int
     text: str
+    corrected_text: str
 
 
     sentiment: Optional[str] = None

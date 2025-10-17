@@ -7,19 +7,18 @@ from app.domain.reviews.entities import ReviewEntity
 
 class ReviewRepository(Protocol):
 
-    def create(self, *, user_id: int, text: str) -> ReviewEntity: ...
-    def update_analysis(
+    def create_approved(
         self,
         *,
-        review_id: int,
+        user_id: int,
+        text: str,
+        corrected_text: str,
         sentiment: Optional[str],
         polarity: Optional[float],
-        status: Optional[str],
         suggestion: Optional[str],
         feedback: Optional[str] = None,
     ) -> ReviewEntity: ...
     def delete(self, review_id: int) -> bool: ...
-
     def get(self, review_id: int) -> Optional[ReviewEntity]: ...
     def list_by_user(self, *, user_id: int) -> List[ReviewEntity]: ...
 
@@ -52,4 +51,9 @@ class SuggestionEngine(Protocol):
     def evaluate(self, *, text: str) -> dict: ...
 
 
-__all__ = ["ReviewRepository", "SentimentAnalyzer", "SuggestionEngine"]
+class DraftProvider(Protocol):
+
+    def create(self, *, user_id: int, text: str, group_id: str) -> str: ...
+    def decode(self, token: str) -> dict: ...  # {"user_id","text","group_id","ts"}
+
+__all__ = ["ReviewRepository", "SentimentAnalyzer", "SuggestionEngine", "DraftProvider"]

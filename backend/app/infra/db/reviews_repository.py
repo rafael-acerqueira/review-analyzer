@@ -18,7 +18,8 @@ class SqlModelReviewRepository(ReviewRepository):
         return ReviewEntity(
             id=row.id,
             user_id=row.user_id,
-            text=row.text,
+            text=getattr(row, "text", getattr(row, "text", "")),
+            corrected_text=getattr(row, "corrected_text", getattr(row, "text", "")),
             sentiment=getattr(row, "sentiment", None),
             polarity=getattr(row, "polarity", None),
             status=getattr(row, "status", None),
@@ -32,49 +33,33 @@ class SqlModelReviewRepository(ReviewRepository):
         return [self._to_entity(r) for r in rows if r is not None]
 
 
-    def create(self, *, user_id: int, text: str) -> ReviewEntity:
+    def create_approved(
+        self,
+        *,
+        user_id: int,
+        text: str,
+        corrected_text: str,
+        sentiment: Optional[str],
+        polarity: Optional[float],
+        suggestion: Optional[str],
+        feedback: Optional[str] = None,
+    ) -> ReviewEntity:
         row = ReviewModel(
             user_id=user_id,
             text=text,
-            sentiment=None,
-            polarity=None,
-            status=getattr(ReviewModel, "status").default.arg if hasattr(getattr(ReviewModel, "status"), "default") else None,
-            suggestion=None,
-            feedback=None,
+            corrected_text=corrected_text,
+            sentiment=sentiment,
+            polarity=polarity,
+            status="approved",
+            suggestion=suggestion,
+            feedback=feedback,
         )
         self.db.add(row)
         self.db.commit()
         self.db.refresh(row)
         return self._to_entity(row)
 
-    def update_analysis(
-        self,
-        *,
-        review_id: int,
-        sentiment: Optional[str],
-        polarity: Optional[float],
-        status: Optional[str],
-        suggestion: Optional[str],
-        feedback: Optional[str] = None,
-    ) -> ReviewEntity:
-        row = self.db.get(ReviewModel, review_id)
-        if not row:
-            return None
-        if sentiment is not None:
-            row.sentiment = sentiment
-        if polarity is not None:
-            row.polarity = polarity
-        if status is not None:
-            row.status = status
-        if suggestion is not None:
-            row.suggestion = suggestion
-        if feedback is not None:
-            row.feedback = feedback
 
-        self.db.add(row)
-        self.db.commit()
-        self.db.refresh(row)
-        return self._to_entity(row)
 
     def delete(self, review_id: int) -> bool:
         row = self.db.get(ReviewModel, review_id)
