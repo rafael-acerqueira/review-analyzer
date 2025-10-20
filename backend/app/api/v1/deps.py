@@ -56,3 +56,46 @@ def get_refresh_tokens_use_case(
     tokens = Depends(get_token_provider),
 ) -> RefreshTokens:
     return RefreshTokens(users=repo, tokens=tokens)
+
+
+
+
+def get_review_repo(db: Session = Depends(get_db)):
+    # SQLModel adapter do repositório
+    from app.infra.db.reviews_repository import SqlModelReviewRepository
+    return SqlModelReviewRepository(db)
+
+def get_sentiment_analyzer():
+    from app.services.sentiment_analysis_service import SentimentAnalysisService
+    return SentimentAnalysisService()
+
+def get_suggestion_engine():
+    from app.services.suggestion_service import SuggestionService
+    return SuggestionService()
+
+def get_draft_provider():
+    from app.infra.tokens.review_draft_provider import JwtDraftProvider
+    return JwtDraftProvider()
+
+
+
+def get_evaluate_text_uc(
+    sentiment = Depends(get_sentiment_analyzer),
+    sugg = Depends(get_suggestion_engine),
+):
+    from app.domain.reviews.use_cases import EvaluateText
+    return EvaluateText(sentiment=sentiment, sugg=sugg)
+
+def get_submit_review_uc(
+    repo = Depends(get_review_repo),
+    evaluator = Depends(get_evaluate_text_uc),
+    drafts = Depends(get_draft_provider),
+):
+    from app.domain.reviews.use_cases import SubmitReview
+    return SubmitReview(reviews=repo, evaluator=evaluator, drafts=drafts)
+
+def get_list_my_reviews_uc(
+    repo = Depends(get_review_repo),
+):
+    from app.domain.reviews.use_cases import ListMyReviews
+    return ListMyReviews(reviews=repo)
