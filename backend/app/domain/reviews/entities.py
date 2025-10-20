@@ -9,10 +9,7 @@ class ReviewEntity:
     user_id: int
     text: str
     corrected_text: str
-
-
     sentiment: Optional[str] = None
-    polarity: Optional[float] = None
     status: Optional[str] = None
     suggestion: Optional[str] = None
     feedback: Optional[str] = None

@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Dict
 from datetime import datetime
 from sqlmodel import Session, select
 from sqlalchemy import func
@@ -18,13 +18,12 @@ class SqlModelReviewRepository(ReviewRepository):
         return ReviewEntity(
             id=row.id,
             user_id=row.user_id,
-            text=getattr(row, "text", getattr(row, "text", "")),
-            corrected_text=getattr(row, "corrected_text", getattr(row, "text", "")),
-            sentiment=getattr(row, "sentiment", None),
-            polarity=getattr(row, "polarity", None),
-            status=getattr(row, "status", None),
+            text=getattr(row, "text", ""),
+            corrected_text=getattr(row, "corrected_text", None),
+            sentiment=getattr(row, "sentiment", "unknown") or "unknown",
+            status=getattr(row, "status", "approved") or "approved",
+            feedback=getattr(row, "feedback", "") or "",
             suggestion=getattr(row, "suggestion", None),
-            feedback=getattr(row, "feedback", None),
             created_at=getattr(row, "created_at", None),
             updated_at=getattr(row, "updated_at", None),
         )
@@ -32,34 +31,33 @@ class SqlModelReviewRepository(ReviewRepository):
     def _rows_to_entities(self, rows: List[ReviewModel]) -> List[ReviewEntity]:
         return [self._to_entity(r) for r in rows if r is not None]
 
-
     def create_approved(
         self,
         *,
         user_id: int,
         text: str,
-        corrected_text: str,
-        sentiment: Optional[str],
-        polarity: Optional[float],
+        corrected_text: Optional[str],
+        sentiment: str,
+        status: str,
+        feedback: str,
         suggestion: Optional[str],
-        feedback: Optional[str] = None,
     ) -> ReviewEntity:
         row = ReviewModel(
             user_id=user_id,
             text=text,
-            corrected_text=corrected_text,
-            sentiment=sentiment,
-            polarity=polarity,
-            status="approved",
+            corrected_text=corrected_text or "",
+            sentiment=sentiment or "unknown",
+            status=status or "approved",
+            feedback=feedback or "",
             suggestion=suggestion,
-            feedback=feedback,
         )
         self.db.add(row)
         self.db.commit()
         self.db.refresh(row)
         return self._to_entity(row)
 
-
+    def get(self, review_id: int) -> Optional[ReviewEntity]:
+        return self._to_entity(self.db.get(ReviewModel, review_id))
 
     def delete(self, review_id: int) -> bool:
         row = self.db.get(ReviewModel, review_id)
@@ -68,11 +66,6 @@ class SqlModelReviewRepository(ReviewRepository):
         self.db.delete(row)
         self.db.commit()
         return True
-
-
-    def get(self, review_id: int) -> Optional[ReviewEntity]:
-        row = self.db.get(ReviewModel, review_id)
-        return self._to_entity(row)
 
     def list_by_user(self, *, user_id: int) -> List[ReviewEntity]:
         stmt = select(ReviewModel).where(ReviewModel.user_id == user_id).order_by(ReviewModel.created_at.desc())
@@ -90,38 +83,36 @@ class SqlModelReviewRepository(ReviewRepository):
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ) -> List[ReviewEntity]:
-        conditions = []
+        conds = []
         if sentiment:
-            conditions.append(ReviewModel.sentiment == sentiment)
+            conds.append(ReviewModel.sentiment == sentiment)
         if status:
-            conditions.append(ReviewModel.status == status)
+            conds.append(ReviewModel.status == status)
         if user_id:
-            conditions.append(ReviewModel.user_id == user_id)
+            conds.append(ReviewModel.user_id == user_id)
         if created_from:
-            conditions.append(ReviewModel.created_at >= created_from)
+            conds.append(ReviewModel.created_at >= created_from)
         if created_to:
-            conditions.append(ReviewModel.created_at <= created_to)
+            conds.append(ReviewModel.created_at <= created_to)
 
         stmt = select(ReviewModel)
-        if conditions:
-            stmt = stmt.where(*conditions)
+        if conds:
+            stmt = stmt.where(*conds)
         stmt = stmt.order_by(ReviewModel.created_at.desc())
-
         if offset is not None:
             stmt = stmt.offset(offset)
         if limit is not None:
             stmt = stmt.limit(limit)
-
         rows = self.db.exec(stmt).all()
         return self._rows_to_entities(rows)
 
     def stats(
-        self,
-        *,
-        created_from: Optional[datetime] = None,
-        created_to: Optional[datetime] = None,
-        user_id: Optional[int] = None,
-    ) -> dict:
+            self,
+            *,
+            created_from: Optional[datetime] = None,
+            created_to: Optional[datetime] = None,
+            user_id: Optional[int] = None,
+    ) -> Dict:
         conditions = []
         if user_id:
             conditions.append(ReviewModel.user_id == user_id)
@@ -133,23 +124,29 @@ class SqlModelReviewRepository(ReviewRepository):
         total_stmt = select(func.count(ReviewModel.id))
         if conditions:
             total_stmt = total_stmt.where(*conditions)
-        total = self.db.exec(total_stmt).one()[0]
+        total_res = self.db.exec(total_stmt)
+        first_row = total_res.first()
+        if first_row is None:
+            total = 0
+        elif isinstance(first_row, tuple):
+            total = int(first_row[0])
+        else:
+            total = int(first_row)
 
-        by_sentiment_stmt = select(ReviewModel.sentiment, func.count(ReviewModel.id)).group_by(ReviewModel.sentiment)
+
+        by_sent_stmt = select(ReviewModel.sentiment, func.count(ReviewModel.id))
         if conditions:
-            by_sentiment_stmt = by_sentiment_stmt.where(*conditions)
-        sentiment_rows = self.db.exec(by_sentiment_stmt).all()
-        by_sentiment = {row[0]: row[1] for row in sentiment_rows}
+            by_sent_stmt = by_sent_stmt.where(*conditions)
+        by_sent_stmt = by_sent_stmt.group_by(ReviewModel.sentiment)
+        sent_rows = self.db.exec(by_sent_stmt).all()
+        by_sentiment = {k if k is not None else "unknown": int(v) for (k, v) in sent_rows}
 
-        by_status_stmt = select(ReviewModel.status, func.count(ReviewModel.id)).group_by(ReviewModel.status)
 
+        by_status_stmt = select(ReviewModel.status, func.count(ReviewModel.id))
         if conditions:
             by_status_stmt = by_status_stmt.where(*conditions)
+        by_status_stmt = by_status_stmt.group_by(ReviewModel.status)
         status_rows = self.db.exec(by_status_stmt).all()
-        by_status = {row[0]: row[1] for row in status_rows}
+        by_status = {k if k is not None else "unknown": int(v) for (k, v) in status_rows}
 
-        return {
-            "total": int(total or 0),
-            "by_sentiment": {k: int(v) for k, v in by_sentiment.items()},
-            "by_status": {k: int(v) for k, v in by_status.items()},
-        }
+        return {"total": total, "by_sentiment": by_sentiment, "by_status": by_status}

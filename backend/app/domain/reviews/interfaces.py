@@ -14,7 +14,6 @@ class ReviewRepository(Protocol):
         text: str,
         corrected_text: str,
         sentiment: Optional[str],
-        polarity: Optional[float],
         suggestion: Optional[str],
         feedback: Optional[str] = None,
     ) -> ReviewEntity: ...

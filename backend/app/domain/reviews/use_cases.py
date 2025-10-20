@@ -54,21 +54,20 @@ class SubmitReview:
     def execute(self, *, user_id: int, text: str, draft_token: Optional[str] = None, group_id: Optional[str] = None) -> SubmitResult:
         ev = self.evaluator.execute(text=text)
 
-        text: Optional[str] = None
-        draft_group_id = group_id or str(uuid.uuid4())
 
+        text: Optional[str] = None
+        gid = group_id or str(uuid.uuid4())
         if draft_token:
             try:
                 payload = self.drafts.decode(draft_token)
-
                 if str(user_id) == str(payload.get("sub")):
                     text = payload.get("text")
-
-                    draft_group_id = payload.get("group_id") or draft_group_id
+                    gid = payload.get("group_id") or gid
             except Exception:
-                text = None
+                pass
 
         if ev.status == "approved":
+
             if not text:
                 text = ev.text
 
@@ -76,30 +75,18 @@ class SubmitReview:
                 user_id=user_id,
                 text=text,
                 corrected_text=ev.text,
-                sentiment=ev.sentiment,
-                polarity=ev.polarity,
+                sentiment=ev.sentiment or "unknown",
+                status="approved",
+                feedback=ev.feedback or "",
                 suggestion=ev.suggestion,
-                feedback=ev.feedback,
             )
-            return SubmitResult(
-                saved=True,
-                review_id=created.id,
-                draft_token=None,
-                group_id=draft_group_id,
-                evaluation=ev,
-            )
+            return SubmitResult(saved=True, review_id=created.id, draft_token=None, group_id=gid, evaluation=ev)
+
 
         if not text:
             text = ev.text
-
-        token = self.drafts.create(user_id=user_id, text=text, group_id=draft_group_id)
-        return SubmitResult(
-            saved=False,
-            review_id=None,
-            draft_token=token,
-            group_id=draft_group_id,
-            evaluation=ev,
-        )
+        token = self.drafts.create(user_id=user_id, text=text, group_id=gid)
+        return SubmitResult(saved=False, review_id=None, draft_token=token, group_id=gid, evaluation=ev)
 
 class ListMyReviews:
     def __init__(self, reviews: ReviewRepository):
