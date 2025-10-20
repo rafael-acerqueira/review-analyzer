@@ -1,42 +1,111 @@
-from fastapi import APIRouter, Depends, status, HTTPException
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
-from app.schemas import ReviewRequest, ReviewResponse, ReviewRead
 from app.models.user import User
-from app.models.review import Review
-from app.database import get_session
-from app.services.review_service import create_review
-from sqlmodel import Session, select
 
+from app.schemas import (
+    ReviewRequest,
+    ReviewResponse,
+    ReviewRead,
+    ReviewSubmitIn,
+    ReviewSubmitOut,
+)
 
-from app.services.sentiment_analysis_service import SentimentAnalysisService
-from app.services.suggestion_service import SuggestionService
+from app.domain.reviews.use_cases import EvaluateText, SubmitReview, ListMyReviews
+
+from app.domain.reviews.exceptions import InvalidReview
+
+from app.api.v1.deps import (
+    get_evaluate_text_uc,
+    get_submit_review_uc,
+    get_list_my_reviews_uc,
+)
 
 router = APIRouter()
 
-@router.post("/reviews", status_code=status.HTTP_201_CREATED, response_model=ReviewRead)
-def create_new_review(review: Review, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)) -> Review:
+
+@router.post("/evaluate", response_model=ReviewResponse, status_code=status.HTTP_200_OK)
+def evaluate_review(
+    payload: ReviewRequest,
+    current_user: User = Depends(get_current_user),
+    uc: EvaluateText = Depends(get_evaluate_text_uc),
+):
     if not current_user:
         raise HTTPException(status_code=403, detail="Not authorized")
-    return create_review(session, review, current_user)
 
-@router.get("/my-reviews", response_model=list[ReviewRead])
-def get_my_reviews(session: Session = Depends(get_session), user: User = Depends(get_current_user)) -> ReviewRead:
-    reviews = session.exec(select(Review).where(Review.user_id == user.id)).all()
-    return reviews
+    try:
+        ev = uc.execute(text=payload.text)
+        return ReviewResponse(
+            text=ev.text,
+            sentiment=ev.sentiment,
+            polarity=ev.polarity,
+            suggestion=ev.suggestion,
+            status=ev.status,
+            feedback=ev.feedback,
+        )
+    except InvalidReview as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-@router.post("/analyze_review")
-def analyze_review(request: ReviewRequest, current_user: User = Depends(get_current_user), session: Session = Depends(get_session)) -> ReviewResponse:
+
+@router.post("/submit", response_model=ReviewSubmitOut, status_code=status.HTTP_200_OK)
+def submit_review(
+    payload: ReviewSubmitIn,
+    current_user: User = Depends(get_current_user),
+    uc: SubmitReview = Depends(get_submit_review_uc),
+):
     if not current_user:
         raise HTTPException(status_code=403, detail="Not authorized")
-    sentiment, polarity  = SentimentAnalysisService.analyze(request.text)
-    quality = SuggestionService.evaluate_review(text=request.text, session=session)
 
-    return ReviewResponse(
-        text=request.text,
-        sentiment=sentiment,
-        polarity=polarity,
-        suggestion=quality['suggestion'],
-        status=quality['status'],
-        feedback=quality['feedback']
-    )
+    try:
+        res = uc.execute(
+            user_id=current_user.id,
+            text=payload.text,
+            draft_token=payload.draft_token,
+            group_id=payload.group_id,
+        )
+
+        return ReviewSubmitOut(
+            saved=res.saved,
+            review_id=res.review_id,
+            draft_token=res.draft_token,
+            group_id=res.group_id,
+            evaluation={
+                "text": res.evaluation.text,
+                "sentiment": res.evaluation.sentiment,
+                "polarity": res.evaluation.polarity,
+                "status": res.evaluation.status,
+                "suggestion": res.evaluation.suggestion,
+                "feedback": res.evaluation.feedback,
+            },
+        )
+    except InvalidReview as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/mine", response_model=List[ReviewRead], status_code=status.HTTP_200_OK)
+def list_my_reviews(
+    current_user: User = Depends(get_current_user),
+    uc: ListMyReviews = Depends(get_list_my_reviews_uc),
+):
+    if not current_user:
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    entities = uc.execute(user_id=current_user.id)
+    return [
+        ReviewRead(
+            id=e.id,
+            user_id=e.user_id,
+            original_text=e.original_text,
+            corrected_text=e.corrected_text,
+            sentiment=e.sentiment,
+            polarity=e.polarity,
+            status=e.status,
+            suggestion=e.suggestion,
+            feedback=e.feedback,
+            created_at=e.created_at,
+            updated_at=e.updated_at,
+        )
+        for e in entities
+    ]

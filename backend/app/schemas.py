@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from datetime import datetime
 
 
@@ -66,3 +66,16 @@ class RagHit(BaseModel):
 class RagSearchOut(BaseModel):
     results: List[RagHit]
     model_config = ConfigDict(from_attributes=True)
+
+
+class ReviewSubmitIn(BaseModel):
+    text: str = Field(..., min_length=1)
+    draft_token: Optional[str] = None
+    group_id: Optional[str] = None
+
+class ReviewSubmitOut(BaseModel):
+    saved: bool
+    review_id: Optional[int] = None
+    draft_token: Optional[str] = None
+    group_id: Optional[str] = None
+    evaluation: ReviewResponse
