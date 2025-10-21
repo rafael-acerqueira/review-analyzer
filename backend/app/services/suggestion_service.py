@@ -18,7 +18,7 @@ def _render_examples_block(hits: list[dict]) -> str:
 
 class SuggestionService:
     @staticmethod
-    def evaluate_review(text: str,  session: Optional[Session] = None, k: int=5, min_score: float=0.7):
+    def evaluate(text: str,  session: Optional[Session] = None, k: int=5, min_score: float=0.7):
 
         hits = []
         if session is not None:

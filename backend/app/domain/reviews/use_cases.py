@@ -5,6 +5,7 @@ from app.domain.reviews.entities import ReviewEntity
 from app.domain.reviews.interfaces import ReviewRepository, SentimentAnalyzer, SuggestionEngine, DraftProvider
 from app.domain.reviews.exceptions import InvalidReview
 
+
 @dataclass(frozen=True)
 class EvaluationResult:
     text: str
@@ -43,7 +44,7 @@ class EvaluateText:
             feedback = sdict.get("feedback")
         except Exception:
             status = suggestion = feedback = None
-            
+
         s = s or "unknown"
         p = float(p) if p is not None else 0.0
         status = status or "pending"
