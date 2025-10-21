@@ -43,51 +43,83 @@ class EvaluateText:
             feedback = sdict.get("feedback")
         except Exception:
             status = suggestion = feedback = None
-        return EvaluationResult(text=text, sentiment=s, polarity=p, status=status, suggestion=suggestion, feedback=feedback)
+            
+        s = s or "unknown"
+        p = float(p) if p is not None else 0.0
+        status = status or "pending"
+        suggestion = suggestion or ""
+        feedback = feedback or ""
 
+        return EvaluationResult(
+            text=text,
+            sentiment=s,
+            polarity=p,
+            status=status,
+            suggestion=suggestion,
+            feedback=feedback,
+        )
 class SubmitReview:
     def __init__(self, reviews: ReviewRepository, evaluator: EvaluateText, drafts: DraftProvider):
         self.reviews = reviews
         self.evaluator = evaluator
         self.drafts = drafts
 
-    def execute(self, *, user_id: int, text: str, draft_token: Optional[str] = None, group_id: Optional[str] = None) -> SubmitResult:
+    def execute(
+        self,
+        *,
+        user_id: int,
+        text: str,
+        draft_token: Optional[str] = None,
+        group_id: Optional[str] = None
+    ) -> SubmitResult:
+
         ev = self.evaluator.execute(text=text)
 
-
-        text: Optional[str] = None
+        original_text: Optional[str] = None
         gid = group_id or str(uuid.uuid4())
+
         if draft_token:
             try:
                 payload = self.drafts.decode(draft_token)
+
                 if str(user_id) == str(payload.get("sub")):
-                    text = payload.get("text")
+                    original_text = payload.get("text")
                     gid = payload.get("group_id") or gid
             except Exception:
                 pass
 
-        if ev.status == "approved":
-
-            if not text:
-                text = ev.text
+        if (ev.status or "").lower() == "approved":
+            if not original_text:
+                original_text = ev.text
 
             created = self.reviews.create_approved(
                 user_id=user_id,
-                text=text,
+                text=original_text,
                 corrected_text=ev.text,
                 sentiment=ev.sentiment or "unknown",
                 status="approved",
                 feedback=ev.feedback or "",
                 suggestion=ev.suggestion,
             )
-            return SubmitResult(saved=True, review_id=created.id, draft_token=None, group_id=gid, evaluation=ev)
+            return SubmitResult(
+                saved=True,
+                review_id=created.id,
+                draft_token=None,
+                group_id=gid,
+                evaluation=ev,
+            )
 
+        if not original_text:
+            original_text = ev.text
+        token = self.drafts.create(user_id=user_id, text=original_text, group_id=gid)
 
-        if not text:
-            text = ev.text
-        token = self.drafts.create(user_id=user_id, text=text, group_id=gid)
-        return SubmitResult(saved=False, review_id=None, draft_token=token, group_id=gid, evaluation=ev)
-
+        return SubmitResult(
+            saved=False,
+            review_id=None,
+            draft_token=token,
+            group_id=gid,
+            evaluation=ev,
+        )
 class ListMyReviews:
     def __init__(self, reviews: ReviewRepository):
         self.reviews = reviews

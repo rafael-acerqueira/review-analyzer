@@ -26,7 +26,7 @@ from app.api.v1.deps import (
 router = APIRouter()
 
 
-@router.post("/evaluate", response_model=ReviewResponse, status_code=status.HTTP_200_OK)
+@router.post("/analyze_review", response_model=ReviewResponse, status_code=status.HTTP_200_OK)
 def evaluate_review(
     payload: ReviewRequest,
     current_user: User = Depends(get_current_user),
