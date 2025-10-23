@@ -22,10 +22,6 @@ export default function ReviewForm() {
   const [fillCorrectedText, setFillCorrectedText] = useState(false)
   const [approved, setApproved] = useState(false)
   const [llmFeedback, setLlmFeedback] = useState<LLMFeedback | null>(null)
-  const [feedback, setFeedback] = useState('')
-  const [suggestion, setSuggestion] = useState('')
-  const [status, setStatus] = useState('')
-  const [sentiment, setSentiment] = useState('')
 
   const mutation = useMutation({
     mutationFn: () => submitReviewRequest({ text: review }),
@@ -33,10 +29,6 @@ export default function ReviewForm() {
       setLlmFeedback(data)
       if (originalReview == '') {
         setOriginalReview(review)
-        setFeedback(data.feedback)
-        setSuggestion(data.suggestion)
-        setStatus(data.status)
-        setSentiment(data.sentiment)
       }
 
 
@@ -63,14 +55,20 @@ export default function ReviewForm() {
   })
 
   const createMutation = useMutation({
-    mutationFn: () => createReview({
-      text: originalReview,
-      corrected_text: correctedText,
-      sentiment: sentiment,
-      status: status,
-      feedback: feedback,
-      suggestion: suggestion,
-    }),
+    mutationFn: async () => {
+
+      if (!llmFeedback) {
+        throw new Error('LLM is missing.');
+      }
+      createReview({
+        text: originalReview,
+        corrected_text: correctedText,
+        sentiment: llmFeedback.sentiment,
+        status: llmFeedback.status,
+        feedback: llmFeedback.feedback,
+        suggestion: llmFeedback.suggestion,
+      })
+    },
     onSuccess: () => {
       toast.success('Review confirmed and saved!')
       setReview('')
