@@ -16,9 +16,9 @@ jobs:
       postgres:
         image: pgvector/pgvector:pg16
         env:
-          POSTGRES_USER: ${{ secrets.DB_USER }}
-          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          POSTGRES_DB: ${{ secrets.DB_NAME }}
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: review_analyzer_test
         ports:
           - 5432:5432
         options: >-
@@ -28,11 +28,11 @@ jobs:
           --health-retries 5
 
     env:
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      DATABASE_URL: postgresql+psycopg2://${{ secrets.DB_USER }}:${{ secrets.DB_PASSWORD }}@localhost:5432/${{ secrets.DB_NAME }}
+      DATABASE_URL: postgresql+psycopg2://postgres:postgres@localhost:5432/review_analyzer_test
       SECRET_KEY: test-secret
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: review_analyzer_test
 
     steps:
       - name: Checkout repository
