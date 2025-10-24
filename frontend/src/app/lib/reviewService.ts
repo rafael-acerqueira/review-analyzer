@@ -19,11 +19,15 @@ export async function submitReviewRequest(payload: ReviewPayload) {
   })
 
   if (!response.ok) {
-    if (response.status == 403) {
-      throw new Error("Access Denied!")
-    } else {
-      throw new Error("Error when analyze the review")
+    let errorBody: any;
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = { detail: await response.text() };
     }
+    const msg = errorBody.detail
+
+    throw new Error(msg)
   }
   return response.json()
 }

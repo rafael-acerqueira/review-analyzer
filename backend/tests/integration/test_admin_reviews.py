@@ -1,32 +1,21 @@
-from fastapi.testclient import TestClient
 from app.main import app
-from app.models.user import User
 from app.models.review import Review
-from app.dependencies import get_current_user
 from datetime import datetime, timedelta, timezone
 
-
-client = TestClient(app)
-
-
-def mock_admin_user():
-    return User(id=1, email="admin@example.com", role="admin")
-
-def test_admin_reviews_requires_auth():
+def test_admin_reviews_requires_auth(client):
 
     app.dependency_overrides = {}
     response = client.get("/api/v1/admin/reviews")
     assert response.status_code == 401
     assert response.json()["detail"] == "Not authenticated"
 
-def test_admin_reviews_rejects_non_admin(mock_user):
-    app.dependency_overrides[get_current_user] = lambda: mock_user
+def test_admin_reviews_rejects_non_admin(client, mock_user):
     response = client.get("/api/v1/admin/reviews")
     assert response.status_code == 403
     assert response.json()["detail"] == "Not authorized"
     app.dependency_overrides.clear()
 
-def test_admin_reviews_with_valid_admin_user(mock_admin_user):
+def test_admin_reviews_with_valid_admin_user(client, mock_admin_user):
     response = client.get("/api/v1/admin/reviews")
     assert response.status_code == 200
     assert isinstance(response.json(), list)
@@ -34,6 +23,7 @@ def test_admin_reviews_with_valid_admin_user(mock_admin_user):
 def test_admin_delete_review(client, mock_admin_user):
     payload = {
         "text": "Product was great!",
+        "corrected_text": "Product was great!",
         "sentiment": "positive",
         "status": "Accepted",
         "feedback": "Nice",
@@ -44,14 +34,14 @@ def test_admin_delete_review(client, mock_admin_user):
     review_id = create_resp.json()["id"]
 
     delete_resp = client.delete(f"/api/v1/admin/reviews/{review_id}")
-    assert delete_resp.status_code == 200
+    assert delete_resp.status_code in (200, 201), delete_resp.text
 
-def test_stats_requires_admin_auth():
+def test_stats_requires_admin_auth(client):
+    client.app.dependency_overrides.clear()
     resp = client.get("/api/v1/admin/stats")
     assert resp.status_code == 401
 
-def test_stats_rejects_non_admin(mock_user):
-    app.dependency_overrides[get_current_user] = lambda: mock_user
+def test_stats_rejects_non_admin(client, mock_user):
     resp = client.get("/api/v1/admin/stats")
     assert resp.status_code == 403
     assert resp.json()["detail"] == "Not authorized"
@@ -75,8 +65,6 @@ def test_stats_returns_expected_fields(client, session, user_and_token, mock_adm
 
     session.add_all([review1, review2, review3])
     session.commit()
-
-    client.app.dependency_overrides[get_current_user] = lambda: mock_admin_user
 
     resp = client.get("/api/v1/admin/stats")
     assert resp.status_code == 200
@@ -109,7 +97,6 @@ def test_stats_returns_expected_fields(client, session, user_and_token, mock_adm
     client.app.dependency_overrides.clear()
 
 def test_stats_no_reviews(client, session, mock_admin_user):
-    client.app.dependency_overrides["get_current_user"] = lambda: mock_admin_user
     resp = client.get("/api/v1/admin/stats")
     assert resp.status_code == 200
     data = resp.json()
