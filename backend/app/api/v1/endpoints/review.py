@@ -106,8 +106,7 @@ def list_my_reviews(
             status=e.status,
             suggestion=e.suggestion,
             feedback=e.feedback,
-            created_at=e.created_at,
-            updated_at=e.updated_at,
+            created_at=e.created_at
         )
         for e in entities
     ]
