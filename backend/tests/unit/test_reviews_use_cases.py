@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict
 
 from app.domain.reviews.entities import ReviewEntity
-from app.domain.reviews.use_cases import EvaluateText, SubmitReview, ListMyReviews
+from app.domain.reviews.use_cases import EvaluateText, ListMyReviews
 from app.domain.reviews.exceptions import InvalidReview
 from app.domain.reviews.interfaces import (
     ReviewRepository, SentimentAnalyzer, SuggestionEngine, DraftProvider
@@ -24,7 +24,6 @@ class FakeReviewRepository(ReviewRepository):
         text: str,
         corrected_text: str,
         sentiment: Optional[str],
-        polarity: Optional[float],
         suggestion: Optional[str],
         feedback: Optional[str] = None,
     ) -> ReviewEntity:
@@ -36,7 +35,6 @@ class FakeReviewRepository(ReviewRepository):
             text=text,
             corrected_text=corrected_text,
             sentiment=sentiment,
-            polarity=polarity,
             status="approved",
             suggestion=suggestion,
             feedback=feedback,
@@ -120,89 +118,16 @@ def test_evaluate_text_ok():
     assert ev.suggestion == "add more details"
     assert ev.feedback == "too short"
 
-
-
-
-def test_submit_review_first_attempt_approved_saves_with_original_equals_corrected():
-    repo = FakeReviewRepository()
-    sentiment = FakeSentimentAnalyzer("positive", 0.8)
-    sugg = FakeSuggestionEngine(status="approved", suggestion="looks good")
-    evaluator = EvaluateText(sentiment, sugg, min_length=3)
-    drafts = FakeDraftProvider()
-
-    uc = SubmitReview(reviews=repo, evaluator=evaluator, drafts=drafts)
-    res = uc.execute(user_id=10, text="great product!")
-
-    assert res.saved is True
-    assert res.review_id is not None
-    saved = repo.get(res.review_id)
-    assert saved is not None
-    assert saved.text == "great product!"
-    assert saved.corrected_text == "great product!"
-    assert saved.status == "approved"
-    assert saved.sentiment == "positive"
-    assert saved.polarity == 0.8
-    assert res.draft_token is None
-
-
-def test_submit_review_first_attempt_rejected_returns_draft_token_without_saving():
-    repo = FakeReviewRepository()
-    sentiment = FakeSentimentAnalyzer("negative", -0.3)
-    sugg = FakeSuggestionEngine(status="rejected", suggestion="please explain more", feedback="vague")
-    evaluator = EvaluateText(sentiment, sugg, min_length=3)
-    drafts = FakeDraftProvider()
-
-    uc = SubmitReview(reviews=repo, evaluator=evaluator, drafts=drafts)
-    res = uc.execute(user_id=20, text="bad")
-
-    assert res.saved is False
-    assert res.review_id is None
-    assert res.draft_token is not None
-    assert len(repo.list_by_user(user_id=20)) == 0
-
-
-def test_submit_review_second_attempt_with_draft_token_saves_original_and_corrected():
-    repo = FakeReviewRepository()
-    drafts = FakeDraftProvider()
-
-    evaluator1 = EvaluateText(
-        sentiment=FakeSentimentAnalyzer("negative", -0.2),
-        sugg=FakeSuggestionEngine(status="rejected", suggestion="add details"),
-        min_length=3,
-    )
-    uc = SubmitReview(reviews=repo, evaluator=evaluator1, drafts=drafts)
-    res1 = uc.execute(user_id=30, text="ok man")
-    assert res1.saved is False
-    assert res1.draft_token is not None
-
-    evaluator2 = EvaluateText(
-        sentiment=FakeSentimentAnalyzer("positive", 0.7),
-        sugg=FakeSuggestionEngine(status="approved", suggestion=""),
-        min_length=3,
-    )
-    uc2 = SubmitReview(reviews=repo, evaluator=evaluator2, drafts=drafts)
-    res2 = uc2.execute(user_id=30, text="now with enough details", draft_token=res1.draft_token)
-
-    assert res2.saved is True
-    saved = repo.get(res2.review_id)
-    assert saved is not None
-    assert saved.text == "ok man"
-    assert saved.corrected_text == "now with enough details"
-    assert saved.sentiment == "positive"
-    assert saved.polarity == 0.7
-
-
-
 def test_list_my_reviews_returns_saved_reviews():
     repo = FakeReviewRepository()
 
     r1 = repo.create_approved(
         user_id=7, text="orig1", corrected_text="corr1",
-        sentiment="pos", polarity=0.9, suggestion=None
+        sentiment="pos",suggestion=None
     )
     r2 = repo.create_approved(
         user_id=7, text="orig2", corrected_text="corr2",
-        sentiment="neu", polarity=0.0, suggestion=None
+        sentiment="neu", suggestion=None
     )
 
     uc = ListMyReviews(reviews=repo)
