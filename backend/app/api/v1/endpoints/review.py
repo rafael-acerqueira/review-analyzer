@@ -1,5 +1,4 @@
 from typing import List
-
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.dependencies import get_current_user
@@ -8,19 +7,16 @@ from app.models.user import User
 from app.schemas import (
     ReviewRequest,
     ReviewResponse,
-    ReviewRead,
-    ReviewSubmitIn,
-    ReviewSubmitOut,
+    ReviewRead, ReviewCreate
 )
 
-from app.domain.reviews.use_cases import EvaluateText, SubmitReview, ListMyReviews
+from app.domain.reviews.use_cases import EvaluateText, ListMyReviews, SaveApprovedReview, SaveApprovedInput
 
 from app.domain.reviews.exceptions import InvalidReview
 
 from app.api.v1.deps import (
     get_evaluate_text_uc,
-    get_submit_review_uc,
-    get_list_my_reviews_uc,
+    get_list_my_reviews_uc, get_save_approved_uc,
 )
 
 router = APIRouter()
@@ -49,42 +45,49 @@ def evaluate_review(
         raise HTTPException(status_code=400, detail=str(e))
 
 
-@router.post("/submit", response_model=ReviewSubmitOut, status_code=status.HTTP_200_OK)
-def submit_review(
-    payload: ReviewSubmitIn,
+@router.post("/reviews", response_model=ReviewRead, status_code=status.HTTP_201_CREATED)
+def create_review(
+    data: ReviewCreate,
     current_user: User = Depends(get_current_user),
-    uc: SubmitReview = Depends(get_submit_review_uc),
+    uc: SaveApprovedReview = Depends(get_save_approved_uc),
 ):
     if not current_user:
         raise HTTPException(status_code=403, detail="Not authorized")
 
-    try:
-        res = uc.execute(
-            user_id=current_user.id,
-            text=payload.text,
-            draft_token=payload.draft_token,
-            group_id=payload.group_id,
-        )
+    if not (data.text and data.text.strip()):
+        raise HTTPException(400, detail="Missing original text (text)")
+    if not (data.corrected_text and data.corrected_text.strip()):
+        raise HTTPException(400, detail="Missing corrected_text")
 
-        return ReviewSubmitOut(
-            saved=res.saved,
-            review_id=res.review_id,
-            draft_token=res.draft_token,
-            group_id=res.group_id,
-            evaluation={
-                "text": res.evaluation.text,
-                "sentiment": res.evaluation.sentiment,
-                "polarity": res.evaluation.polarity,
-                "status": res.evaluation.status,
-                "suggestion": res.evaluation.suggestion,
-                "feedback": res.evaluation.feedback,
-            },
+    try:
+        ent = uc.execute(
+            SaveApprovedInput(
+                user_id=current_user.id,
+                text=data.text,
+                corrected_text=data.corrected_text,
+                sentiment=data.sentiment,
+                status=data.status,
+                feedback=data.feedback,
+                suggestion=data.suggestion,
+            )
         )
-    except InvalidReview as e:
+    except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+    return ReviewRead(
+        id=ent.id,
+        text=ent.text,
+        corrected_text=ent.corrected_text,
+        sentiment=ent.sentiment,
+        status=ent.status,
+        feedback=ent.feedback,
+        suggestion=ent.suggestion,
+        user_id=ent.user_id,
+        created_at=ent.created_at,
+    )
 
-@router.get("/mine", response_model=List[ReviewRead], status_code=status.HTTP_200_OK)
+
+@router.get("/my-reviews", response_model=List[ReviewRead], status_code=status.HTTP_200_OK)
 def list_my_reviews(
     current_user: User = Depends(get_current_user),
     uc: ListMyReviews = Depends(get_list_my_reviews_uc),
@@ -97,10 +100,9 @@ def list_my_reviews(
         ReviewRead(
             id=e.id,
             user_id=e.user_id,
-            original_text=e.original_text,
+            text=e.text,
             corrected_text=e.corrected_text,
             sentiment=e.sentiment,
-            polarity=e.polarity,
             status=e.status,
             suggestion=e.suggestion,
             feedback=e.feedback,

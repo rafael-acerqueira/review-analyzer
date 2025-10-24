@@ -67,15 +67,10 @@ class RagSearchOut(BaseModel):
     results: List[RagHit]
     model_config = ConfigDict(from_attributes=True)
 
-
-class ReviewSubmitIn(BaseModel):
-    text: str = Field(..., min_length=1)
-    draft_token: Optional[str] = None
-    group_id: Optional[str] = None
-
-class ReviewSubmitOut(BaseModel):
-    saved: bool
-    review_id: Optional[int] = None
-    draft_token: Optional[str] = None
-    group_id: Optional[str] = None
-    evaluation: ReviewResponse
+class ReviewCreate(BaseModel):
+    text: str
+    corrected_text: str
+    sentiment: str
+    status: str
+    feedback: str
+    suggestion: Optional[str] = None
