@@ -1,9 +1,16 @@
+from __future__ import annotations
 from fastapi import Depends
 from sqlmodel import Session
+from functools import lru_cache
 
+from app.domain.rag.use_cases import SearchRag
 from app.domain.reviews.use_cases import SaveApprovedReview
+from app.infra.db.rag_repository import SqlModelRagRepository
 from app.infra.db.repositories import SqlModelUserRepository
+from app.infra.db.reviews_repository import SqlModelReviewRepository
 from app.infra.tokens.token_provider import SecurityTokenProvider
+
+from app.infra.embeddings.local_sentence_transformer import LocalSentenceTransformerEmbedder
 
 from app.domain.auth.use_cases import (
     RegisterUser,
@@ -73,9 +80,6 @@ def get_suggestion_engine():
     from app.services.suggestion_service import SuggestionService
     return SuggestionService()
 
-def get_save_approved_uc(repo = Depends(get_review_repo)) -> SaveApprovedReview:
-    return SaveApprovedReview(repo)
-
 def get_evaluate_text_uc(
     sentiment = Depends(get_sentiment_analyzer),
     sugg = Depends(get_suggestion_engine),
@@ -88,3 +92,33 @@ def get_list_my_reviews_uc(
 ):
     from app.domain.reviews.use_cases import ListMyReviews
     return ListMyReviews(reviews=repo)
+
+
+@lru_cache(maxsize=1)
+def _query_embedder_singleton() -> LocalSentenceTransformerEmbedder:
+    return LocalSentenceTransformerEmbedder()
+
+@lru_cache(maxsize=1)
+def _doc_embedder_singleton() -> LocalSentenceTransformerEmbedder:
+    return LocalSentenceTransformerEmbedder(query_prefix="passage: ")
+
+def get_query_embedder() -> LocalSentenceTransformerEmbedder:
+    return _query_embedder_singleton()
+
+def get_doc_embedder() -> LocalSentenceTransformerEmbedder:
+    return _doc_embedder_singleton()
+
+def get_save_approved_uc(
+    repo: SqlModelReviewRepository = Depends(get_review_repo),
+    doc_embedder: LocalSentenceTransformerEmbedder = Depends(get_doc_embedder),
+) -> SaveApprovedReview:
+    return SaveApprovedReview(repo=repo, embedder=doc_embedder)
+
+def get_rag_repo(db: Session = Depends(get_db)) -> SqlModelRagRepository:
+    return SqlModelRagRepository(db)
+
+def get_rag_uc(
+    embedder: LocalSentenceTransformerEmbedder = Depends(get_query_embedder),  # usa "query: " (E5)
+    repo: SqlModelRagRepository = Depends(get_rag_repo),
+) -> SearchRag:
+    return SearchRag(embedder=embedder, repo=repo)

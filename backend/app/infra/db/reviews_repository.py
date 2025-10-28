@@ -41,6 +41,7 @@ class SqlModelReviewRepository(ReviewRepository):
         status: str,
         feedback: str,
         suggestion: Optional[str],
+        embedding: Optional[List[float]] = None
     ) -> ReviewEntity:
         row = ReviewModel(
             user_id=user_id,
@@ -50,6 +51,7 @@ class SqlModelReviewRepository(ReviewRepository):
             status=status or "approved",
             feedback=feedback or "",
             suggestion=suggestion,
+            embedding=embedding
         )
         self.db.add(row)
         self.db.commit()

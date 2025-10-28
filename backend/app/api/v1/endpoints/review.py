@@ -56,8 +56,6 @@ def create_review(
 
     if not (data.text and data.text.strip()):
         raise HTTPException(400, detail="Missing original text (text)")
-    if not (data.corrected_text and data.corrected_text.strip()):
-        raise HTTPException(400, detail="Missing corrected_text")
 
     try:
         ent = uc.execute(
