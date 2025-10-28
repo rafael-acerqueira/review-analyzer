@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 from typing import Optional, List
-import uuid
+
 from app.domain.reviews.entities import ReviewEntity
 from app.domain.reviews.interfaces import ReviewRepository, SentimentAnalyzer, SuggestionEngine, DraftProvider
 from app.domain.reviews.exceptions import InvalidReview
 
+from app.domain.rag.interfaces import Embedder
 
 @dataclass(frozen=True)
 class EvaluationResult:
@@ -70,23 +71,36 @@ class SaveApprovedInput:
     feedback: str
     suggestion: Optional[str]
 
+@dataclass
 class SaveApprovedReview:
-    def __init__(self, repo: ReviewRepository):
-        self.repo = repo
+    repo: ReviewRepository
+    embedder: Embedder
 
     def execute(self, data: SaveApprovedInput) -> ReviewEntity:
         status = (data.status or "").strip().lower()
         if status != "accepted":
             raise ValueError("Only Accepted reviews can be created")
 
+        original = (data.text or "").strip()
+        corrected = (data.corrected_text or "").strip()
+        if not original:
+            raise ValueError("Missing original text")
+
+        doc_text = corrected or original
+
+        embedding: List[float] = self.embedder.embed(doc_text)
+        if not embedding:
+            raise ValueError("Failed to generate embedding")
+
         return self.repo.create_approved(
             user_id=data.user_id,
-            text=data.text.strip(),
-            corrected_text=data.corrected_text.strip(),
-            sentiment=data.sentiment or "unknown",
+            text=original,
+            corrected_text=corrected,
+            sentiment=(data.sentiment or "unknown"),
             status=status,
-            feedback=data.feedback or "",
-            suggestion=data.suggestion or "",
+            feedback=(data.feedback or ""),
+            suggestion=(data.suggestion or ""),
+            embedding=embedding,  # << NOVO
         )
 
 class ListMyReviews:
