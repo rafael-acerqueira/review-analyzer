@@ -14,7 +14,7 @@ from app.main import app
 from app.api.v1.deps import (
     get_list_my_reviews_uc,
     get_save_approved_uc,
-    get_evaluate_text_uc
+    get_evaluate_text_uc, get_doc_embedder
 )
 
 from sqlmodel import create_engine, SQLModel, Session, select
@@ -43,7 +43,8 @@ def client(session):
 
     def override_get_save_approved_uc():
         repo = SqlModelReviewRepository(session)
-        return SaveApprovedReview(repo)
+        embedder = FakeDocEmbedder()
+        return SaveApprovedReview(repo,embedder)
     app.dependency_overrides[get_save_approved_uc] = override_get_save_approved_uc
 
     def override_get_list_my_reviews_uc():
@@ -151,3 +152,11 @@ def reviews_data():
         Review(text="Just okay.", sentiment="neutral", status="Accepted", feedback="Be more specific.", suggestion="Add examples."),
     ]
 
+class FakeDocEmbedder:
+    def embed(self, text: str): return [0.1]*384
+
+@pytest.fixture(autouse=True)
+def mock_doc_embedder():
+    app.dependency_overrides[get_doc_embedder] = lambda: FakeDocEmbedder()
+    yield
+    app.dependency_overrides.pop(get_doc_embedder, None)

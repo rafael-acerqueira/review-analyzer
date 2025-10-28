@@ -100,7 +100,7 @@ class SaveApprovedReview:
             status=status,
             feedback=(data.feedback or ""),
             suggestion=(data.suggestion or ""),
-            embedding=embedding,  # << NOVO
+            embedding=embedding,
         )
 
 class ListMyReviews:
