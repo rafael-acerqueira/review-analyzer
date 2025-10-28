@@ -1,9 +1,16 @@
 from fastapi import Depends
 from sqlmodel import Session
+from __future__ import annotations
+from functools import lru_cache
 
 from app.domain.reviews.use_cases import SaveApprovedReview
 from app.infra.db.repositories import SqlModelUserRepository
 from app.infra.tokens.token_provider import SecurityTokenProvider
+
+from app.infra.embeddings.local_sentence_transformer import LocalSentenceTransformerEmbedder
+from app.infra.db.rag_repository import SqlModelRagRepository
+from app.domain.rag.use_cases import SearchRag
+
 
 from app.domain.auth.use_cases import (
     RegisterUser,
@@ -88,3 +95,22 @@ def get_list_my_reviews_uc(
 ):
     from app.domain.reviews.use_cases import ListMyReviews
     return ListMyReviews(reviews=repo)
+
+
+@lru_cache(maxsize=1)
+def _embedder_singleton() -> LocalSentenceTransformerEmbedder:
+    return LocalSentenceTransformerEmbedder()
+
+def get_embedder() -> LocalSentenceTransformerEmbedder:
+    return _embedder_singleton()
+
+def get_rag_repo(db: Session = Depends(_get_session_dep)) -> SqlModelRagRepository:
+    repo = SqlModelRagRepository(db)
+    return repo
+
+
+def get_rag_uc(
+    embedder: LocalSentenceTransformerEmbedder = Depends(get_embedder),
+    repo: SqlModelRagRepository = Depends(get_rag_repo),
+) -> SearchRag:
+    return SearchRag(embedder=embedder, repo=repo)
