@@ -1,6 +1,6 @@
+from __future__ import annotations
 from fastapi import Depends
 from sqlmodel import Session
-from __future__ import annotations
 from functools import lru_cache
 
 from app.domain.reviews.use_cases import SaveApprovedReview
