@@ -5,6 +5,7 @@ from functools import lru_cache
 
 from app.domain.rag.use_cases import SearchRag
 from app.domain.reviews.use_cases import SaveApprovedReview
+from app.infra.db.admin_repository import SqlModelAdminRepository
 from app.infra.db.rag_repository import SqlModelRagRepository
 from app.infra.db.repositories import SqlModelUserRepository
 from app.infra.db.reviews_repository import SqlModelReviewRepository
@@ -18,6 +19,13 @@ from app.domain.auth.use_cases import (
     GoogleLogin,
     TokenExchange,
     RefreshTokens,
+)
+
+from app.domain.admin.use_cases import (
+    ListReviews as AdminListReviews,
+    DeleteReview as AdminDeleteReview,
+    GetStats as AdminGetStats
+
 )
 
 def _get_session_dep():
@@ -122,3 +130,15 @@ def get_rag_uc(
     repo: SqlModelRagRepository = Depends(get_rag_repo),
 ) -> SearchRag:
     return SearchRag(embedder=embedder, repo=repo)
+
+def get_admin_repo(db: Session = Depends(get_db)) -> SqlModelAdminRepository:
+    return SqlModelAdminRepository(db)
+
+def get_admin_list_uc(repo: SqlModelAdminRepository = Depends(get_admin_repo)) -> AdminListReviews:
+    return AdminListReviews(repo=repo)
+
+def get_admin_delete_uc(repo: SqlModelAdminRepository = Depends(get_admin_repo)) -> AdminDeleteReview:
+    return AdminDeleteReview(repo=repo)
+
+def get_admin_stats_uc(repo: SqlModelAdminRepository = Depends(get_admin_repo)) -> AdminGetStats:
+    return AdminGetStats(repo=repo)
