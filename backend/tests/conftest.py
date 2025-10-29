@@ -6,6 +6,7 @@ from starlette.testclient import TestClient
 from app.dependencies import get_current_user
 from app.database import get_session
 from app.domain.reviews.use_cases import SaveApprovedReview, ListMyReviews, EvaluateText
+from app.infra.db.admin_repository import SqlModelAdminRepository
 from app.infra.db.reviews_repository import SqlModelReviewRepository
 from app.models.review import Review
 from app.models.user import User
@@ -14,7 +15,17 @@ from app.main import app
 from app.api.v1.deps import (
     get_list_my_reviews_uc,
     get_save_approved_uc,
-    get_evaluate_text_uc, get_doc_embedder
+    get_evaluate_text_uc, get_doc_embedder,
+    get_admin_repo,
+    get_admin_list_uc,
+    get_admin_delete_uc,
+    get_admin_stats_uc,
+)
+
+from app.domain.admin.use_cases import (
+    ListReviews as AdminListReviews,
+    DeleteReview as AdminDeleteReview,
+    GetStats as AdminGetStats
 )
 
 from sqlmodel import create_engine, SQLModel, Session, select
@@ -44,7 +55,8 @@ def client(session):
     def override_get_save_approved_uc():
         repo = SqlModelReviewRepository(session)
         embedder = FakeDocEmbedder()
-        return SaveApprovedReview(repo,embedder)
+        return SaveApprovedReview(repo=repo, embedder=embedder)
+
     app.dependency_overrides[get_save_approved_uc] = override_get_save_approved_uc
 
     def override_get_list_my_reviews_uc():
@@ -61,6 +73,31 @@ def client(session):
                 return {"status": "approved", "suggestion": "", "feedback": "ok"}
         return EvaluateText(sentiment=_DummySentiment(), sugg=_DummySuggest(), min_length=1)
     app.dependency_overrides[get_evaluate_text_uc] = override_get_evaluate_text_uc
+
+    def override_get_admin_repo():
+        return SqlModelAdminRepository(session)
+
+    app.dependency_overrides[override_get_admin_repo] = override_get_admin_repo
+
+    def override_get_admin_list_uc():
+        return AdminListReviews(repo=SqlModelAdminRepository(session))
+
+    app.dependency_overrides[override_get_admin_list_uc] = override_get_admin_list_uc
+
+    def override_get_admin_delete_uc():
+        return AdminDeleteReview(repo=SqlModelAdminRepository(session))
+
+    app.dependency_overrides[override_get_admin_delete_uc] = override_get_admin_delete_uc
+
+    def override_get_admin_stats_uc():
+        return AdminGetStats(repo=SqlModelAdminRepository(session))
+
+    app.dependency_overrides[override_get_admin_stats_uc] = override_get_admin_stats_uc
+
+    app.dependency_overrides[get_admin_repo] = lambda: SqlModelAdminRepository(session)
+    app.dependency_overrides[get_admin_list_uc] = lambda: AdminListReviews(repo=SqlModelAdminRepository(session))
+    app.dependency_overrides[get_admin_delete_uc] = lambda: AdminDeleteReview(repo=SqlModelAdminRepository(session))
+    app.dependency_overrides[get_admin_stats_uc] = lambda: AdminGetStats(repo=SqlModelAdminRepository(session))
 
     with TestClient(app) as c:
         yield c
