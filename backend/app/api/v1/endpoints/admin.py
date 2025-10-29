@@ -1,141 +1,103 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+# app/api/v1/endpoints/admin.py
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Optional
-from datetime import datetime, timedelta, timezone, date, time
-from app.models.review import Review
-from app.models.user import User
-from app.database import get_session
-from sqlmodel import Session, select, func
+from datetime import datetime, date
 
+from app.models.user import User
 from app.schemas import ReviewRead
-from app.services.review_service import get_reviews, delete_review
 from app.dependencies import get_current_user
+
+from app.api.v1.deps import (
+    get_admin_list_uc,
+    get_admin_delete_uc,
+    get_admin_stats_uc,
+)
+
+from app.domain.admin.use_cases import (
+    ListReviews as AdminListReviews,
+    DeleteReview as AdminDeleteReview,
+    GetStats as AdminGetStats,
+)
 
 router = APIRouter()
 
-@router.get("/reviews", response_model=List[ReviewRead])
+
+def _ensure_admin(user: User):
+    if not user or user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+
+@router.get("/reviews", response_model=List[ReviewRead], status_code=status.HTTP_200_OK)
 def list_reviews(
-        current_user: User = Depends(get_current_user),
-        sentiment: Optional[str] = None,
-        status: Optional[str] = None,
-        date_from: Optional[datetime] = None,
-        date_to: Optional[datetime] = None,
-        session: Session = Depends(get_session)
+    current_user: User = Depends(get_current_user),
+    sentiment: Optional[str] = None,
+    status: Optional[str] = None,
+    date_from: Optional[datetime] = None,
+    date_to: Optional[datetime] = None,
+    uc: AdminListReviews = Depends(get_admin_list_uc),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    return get_reviews(session, sentiment, status, date_from, date_to)
+    _ensure_admin(current_user)
+    rows = uc.execute(
+        sentiment=sentiment,
+        status=status,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    return [
+        ReviewRead(
+            id=r.id,
+            text=r.text,
+            corrected_text=r.corrected_text,
+            sentiment=r.sentiment,
+            status=r.status,
+            feedback=r.feedback,
+            suggestion=r.suggestion,
+            user_id=r.user_id,
+            created_at=r.created_at,
+        )
+        for r in rows
+    ]
 
-@router.delete("/reviews/{review_id}")
-def remove_review(review_id: int, session: Session = Depends(get_session), current_user: User = Depends(get_current_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-    if not delete_review(session, review_id):
+
+@router.delete("/reviews/{review_id}", status_code=status.HTTP_200_OK)
+def remove_review(
+    review_id: int,
+    current_user: User = Depends(get_current_user),
+    uc: AdminDeleteReview = Depends(get_admin_delete_uc),
+):
+    _ensure_admin(current_user)
+    ok = uc.execute(review_id)
+    if not ok:
         raise HTTPException(status_code=404, detail="Review not found")
-    return {"review_id": review_id}
+
+    return {"deleted": True, "review_id": review_id}
 
 
-@router.get("/stats")
+@router.get("/stats", status_code=status.HTTP_200_OK)
 def get_admin_stats(
-    session: Session = Depends(get_session),
     current_user: User = Depends(get_current_user),
     from_date: Optional[date] = Query(None, description="Start date for stats"),
     to_date: Optional[date] = Query(None, description="End date for stats"),
     user_id: Optional[int] = Query(None, description="Filter by user id"),
+    uc: AdminGetStats = Depends(get_admin_stats_uc),
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Not authorized")
-
-    to_date_val = to_date or datetime.now(timezone.utc).date()
-    from_date_val = from_date or (to_date_val - timedelta(days=30))
-
-    from_dt = datetime.combine(from_date_val, time.min)
-    to_dt = datetime.combine(to_date_val, time.max)
-
-    query = select(Review).where(
-        Review.created_at >= from_dt,
-        Review.created_at <= to_dt
-    )
-    if user_id:
-        query = query.where(Review.user_id == user_id)
-    reviews = session.exec(query).all()
-
-    by_sentiment = {}
-    by_status = {}
-    top_rejection_reasons = {}
-
-    if reviews:
-
-        sent_q = (
-            session.exec(
-                select(Review.sentiment, func.count())
-                .where(
-                    Review.created_at >= from_date_val,
-                    Review.created_at <= to_date_val,
-                    *( [Review.user_id == user_id] if user_id else [] )
-                )
-                .group_by(Review.sentiment)
-            )
-        ).all()
-        by_sentiment = dict(sent_q)
-
-
-        status_q = (
-            session.exec(
-                select(Review.status, func.count())
-                .where(
-                    Review.created_at >= from_date_val,
-                    Review.created_at <= to_date_val,
-                    *( [Review.user_id == user_id] if user_id else [] )
-                )
-                .group_by(Review.status)
-            )
-        ).all()
-        by_status = dict(status_q)
-
-        # Top motivos de rejeição (caso queira, se tiver esse campo)
-        rejection_reasons = (
-            session.exec(
-                select(Review.feedback, func.count())
-                .where(
-                    Review.status == "Rejected",
-                    Review.created_at >= from_date_val,
-                    Review.created_at <= to_date_val,
-                    *( [Review.user_id == user_id] if user_id else [] )
-                )
-                .group_by(Review.feedback)
-                .order_by(func.count().desc())
-                .limit(5)
-            )
-        ).all()
-        top_rejection_reasons = [
-            {"reason": reason, "count": count} for reason, count in rejection_reasons if reason
-        ]
-    else:
-        by_sentiment = {}
-        by_status = {}
-        top_rejection_reasons = []
-
-    total_reviews = len(reviews)
-    percent_accepted = (
-        by_status.get("Accepted", 0) / total_reviews * 100 if total_reviews else 0
-    )
-    percent_rejected = (
-        by_status.get("Rejected", 0) / total_reviews * 100 if total_reviews else 0
-    )
-
+    _ensure_admin(current_user)
+    agg = uc.execute(from_date=from_date, to_date=to_date, user_id=user_id)
 
     return {
         "period": {
-            "from": from_date_val,
-            "to": to_date_val,
+            "from": agg.period.from_date,
+            "to": agg.period.to_date,
         },
-        "total_reviews": total_reviews,
-        "by_sentiment": by_sentiment,
-        "by_status": by_status,
-        "percent_accepted": percent_accepted,
-        "percent_rejected": percent_rejected,
-        "top_rejection_reasons": top_rejection_reasons,
+        "total_reviews": agg.total_reviews,
+        "by_sentiment": agg.by_sentiment,
+        "by_status": agg.by_status,
+        "percent_accepted": agg.percent_accepted,
+        "percent_rejected": agg.percent_rejected,
+        "top_rejection_reasons": [
+            {"reason": r.reason, "count": r.count} for r in agg.top_rejection_reasons
+        ],
         "filters": {
-            "user_id": user_id,
-        }
+            "user_id": agg.user_id,
+        },
     }
