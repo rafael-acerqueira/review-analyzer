@@ -126,60 +126,67 @@ npx playwright test
 
 ```
 review-analyzer/
-backend/
-└── app/
-|    ├── main.py                          # FastAPI app + routers include
-|    ├── database.py                      # Engine/Session factory + get_session
-|    ├── security.py                      # JWT helpers (create/verify), password hashing
-|    ├── dependencies.py                  # Auth guard: get_current_user
-|    ├── schemas.py                       # Pydantic DTOs (Review*, Auth*, Rag*)
-|    ├── models/                          # SQLModel tables
-|    │   ├── user.py
-|    │   └── review.py
-|    │
-|    ├── api/
-|    │   └── v1/
-|    │       ├── deps.py                  # DI factories for use cases, repos, embedders
-|    │       └── endpoints/
-|    │           ├── auth.py              # Thin endpoints → delegate to Auth use cases
-|    │           ├── review.py            # /analyze_review, /reviews, /my-reviews
-|    │           ├── admin.py             # /admin/reviews, /admin/stats, delete
-|    │           └── rag.py               # /rag/search
-|    │
-|    ├── domain/                          # Business/Application core (Hexagonal)
-|    │   ├── auth/
-|    │   │   ├── entities.py
-|    │   │   ├── interfaces.py
-|    │   │   └── use_cases.py             # RegisterUser, LoginUser, GoogleLogin, TokenExchange, RefreshTokens
-|    │   ├── reviews/
-|    │   │   ├── entities.py
-|    │   │   ├── exceptions.py
-|    │   │   ├── interfaces.py            # ReviewRepository, Sentiment, Suggestion, Embedder
-|    │   │   └── use_cases.py             # EvaluateText, ListMyReviews, SaveApprovedReview (embeds & saves)
-|    │   ├── rag/
-|    │   │   ├── entities.py              # RagHit, etc.
-|    │   │   ├── interfaces.py            # RagRepository, Embedder
-|    │   │   └── use_cases.py             # SearchRag
-|    │   └── admin/
-|    │       ├── entities.py              # AdminStats, Period, RejectionReason
-|    │       ├── interfaces.py            # AdminReviewsRepository (ports)
-|    │       └── use_cases.py             # ListReviews, DeleteReview, GetStats
-|    │
-|    ├── infra/                           # Adapters (Hexagonal)
-|    │   ├── db/
-|    │   │   ├── repositories.py          # User repository (SQLModel)
-|    │   │   ├── reviews_repository.py    # Reviews CRUD (+ optional stats)
-|    │   │   ├── rag_repository.py        # Vector search (pgvector) for RAG
-|    │   │   └── admin_repository.py      # Admin filters/aggregations (list/delete/stats)
-|    │   ├── embeddings/
-|    │   │   └── local_sentence_transformer.py  # E5 embedder (query/doc) with cache and device control
-|    │   └── tokens/
-|    │       └── token_provider.py        # Token provider for Auth use cases
-|    │
-|    ├── services/
-|    |   ├── retriever.py
-|    │   ├── sentiment_analysis_service.py
-|    └── └── suggestion_service.py
+├── backend/
+│   ├── alembic/                         # Alembic migrations
+│   │   ├── env.py                       # Alembic runtime config (SQLModel/SQLAlchemy)
+│   │   ├── script.py.mako               # Migration template
+│   │   └── versions/                    # Migration files (e.g., *_init.py)
+│   ├── alembic.ini                      # Alembic config (points to DB URL/env.py)
+│   ├── app/
+│   │   ├── main.py                      # FastAPI app + routers include
+│   │   ├── database.py                  # Engine/Session factory + get_session
+│   │   ├── security.py                  # JWT helpers (create/verify), password hashing
+│   │   ├── dependencies.py              # Auth guard: get_current_user
+│   │   ├── schemas.py                   # Pydantic DTOs (Review*, Auth*, Rag*)
+│   │   ├── models/                      # SQLModel tables
+│   │   │   ├── user.py
+│   │   │   └── review.py
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       ├── deps.py              # DI factories (use cases, repos, embedders)
+│   │   │       └── endpoints/
+│   │   │           ├── auth.py          # Thin endpoints → delegate to Auth UCs
+│   │   │           ├── review.py        # /analyze_review, /reviews, /mine
+│   │   │           ├── admin.py         # /admin/reviews, /admin/stats, delete
+│   │   │           └── rag.py           # /rag/search
+│   │   ├── domain/                      # Business/Application core (Hexagonal)
+│   │   │   ├── auth/
+│   │   │   │   ├── entities.py
+│   │   │   │   ├── interfaces.py
+│   │   │   │   └── use_cases.py         # RegisterUser, LoginUser, GoogleLogin, TokenExchange, RefreshTokens
+│   │   │   ├── reviews/
+│   │   │   │   ├── entities.py
+│   │   │   │   ├── exceptions.py
+│   │   │   │   ├── interfaces.py        # ReviewRepository, Sentiment, Suggestion, Embedder
+│   │   │   │   └── use_cases.py         # EvaluateText, ListMyReviews, SaveApprovedReview (embeds & saves)
+│   │   │   ├── rag/
+│   │   │   │   ├── entities.py          # RagHit
+│   │   │   │   ├── interfaces.py        # RagRepository, Embedder
+│   │   │   │   └── use_cases.py         # SearchRag
+│   │   │   └── admin/
+│   │   │       ├── entities.py          # AdminStats, Period, RejectionReason
+│   │   │       ├── interfaces.py        # AdminReviewsRepository (ports)
+│   │   │       └── use_cases.py         # ListReviews, DeleteReview, GetStats
+│   │   ├── infra/                       # Adapters (Hexagonal)
+│   │   │   ├── db/
+│   │   │   │   ├── repositories.py      # User repository (SQLModel)
+│   │   │   │   ├── reviews_repository.py# Reviews CRUD (+ embedding save)
+│   │   │   │   ├── rag_repository.py    # Vector search (pgvector) for RAG
+│   │   │   │   └── admin_repository.py  # Admin filters/aggregations (list/delete/stats)
+│   │   │   ├── embeddings/
+│   │   │   │   └── local_sentence_transformer.py  # E5 embedder (query/doc) with cache/device
+│   │   │   └── tokens/
+│   │   │       └── token_provider.py    # Token provider for Auth UCs
+│   │   ├── services/
+│   │   │   ├── retriever.py
+│   │   │   ├── sentiment_analysis_service.py
+│   │   │   └── suggestion_service.py
+│   ├── tests/
+│   │   ├── unit/                        # Unit tests (use cases, services)
+│   │   ├── integration/                 # Integration tests (API endpoints/repos)
+│   │   └── conftest.py                  # Test fixtures (DB, DI overrides, fake embedders)
+│   ├── pyproject.toml                   # uv/packaging config (deps, extras)
+│   └── uv.lock                          # lockfile
 │
 ├── frontend/
 |   |── src/app                    # Next.js pages (App Router)
