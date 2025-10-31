@@ -1,38 +1,64 @@
 def suggestion_prompt_template(review_text: str, examples_block: str) -> str:
     return f"""
-    You are an expert in evaluating product reviews.
-    Follow these rules strictly:
-    - Do NOT invent facts; use ONLY the user's draft and the APPROVED EXAMPLES provided.
-    - If information is missing in the draft, ask the user to include it (in the feedback).
-    - Output MUST be a single valid JSON object (no markdown fences, no extra text).
+You are an expert specialized in evaluating and improving product reviews.
 
-    Acceptance Criteria:
-    - Clear, specific, useful for other buyers.
-    - At least 20 words.
-    - Describes a specific experience with the product.
+STRICT RULES:
+- Do NOT invent facts. Use ONLY the user's draft and the APPROVED EXAMPLES provided (if any).
+- The "suggestion" MUST NOT introduce new facts or claims not present in the draft.
+- Output MUST be a single, valid JSON object — no markdown formatting, no comments, and no additional text.
+- Only use the fields explicitly listed in the schema below.
 
-    Rejection Criteria:
-    - Too short, generic, or uninformative.
-    - Fewer than 20 words or vague terms like "good", "bad", "nice".
+EVALUATION GUIDELINES:
 
-    USER DRAFT:
-    ---
-    {review_text}
-    ---
+ACCEPTANCE CRITERIA:
+- Clear, specific, and helpful for other buyers.
+- At least 20 words.
+- Describes a concrete experience with the product.
 
-    APPROVED EXAMPLES (from my database):
-    {examples_block}
+REJECTION CRITERIA:
+- Too short, vague, or generic (e.g., "good", "bad", "nice").
+- Fewer than 20 words.
+- Lacks details or clarity.
 
-    TASK:
-    1) Classify as "Accepted" or "Rejected" with a short reason.
-    2) If rejected, list what is missing (bullets) and provide an improved suggestion WITHOUT adding facts not present in the draft.
-    3) Cite the example IDs you leveraged (if any).
+---
 
-    Respond ONLY with JSON in this shape:
-    {{
-      "status": "Accepted" or "Rejected",
-      "feedback": "Short and clear message to the user",
-      "suggestion": "Improved rewrite if rejected, else empty string",
-      "examples_used": ["75","62"]  // IDs you relied on; empty if none
-    }}
-    """
+USER DRAFT:
+{review_text}
+
+---
+
+APPROVED EXAMPLES (from verified users in the database):
+{examples_block}
+
+If this section contains the text "NO_EXAMPLES_FOUND", ignore it completely and set "examples_used": [].
+
+---
+
+TASK:
+1. Classify the review as "Accepted" or "Rejected".
+2. If rejected, explain briefly why, and rewrite an improved version of the same review using only the original information.
+3. If accepted, return an empty "suggestion" string.
+4. If examples were used, cite their IDs as strings in the "examples_used" array.
+5. Keep "feedback" concise and actionable (no more than 200 characters).
+6. Write the response in the same language as the user's draft.
+
+---
+
+OUTPUT FORMAT:
+Return ONLY this JSON (no markdown, no extra fields):
+
+{{
+  "status": "Accepted" or "Rejected",
+  "feedback": "Short, actionable feedback (max 200 characters)",
+  "suggestion": "Improved version if rejected, else empty string",
+  "examples_used": ["<id1>", "<id2>"]  // empty list if none
+}}
+
+Example of a valid output:
+{{
+  "status": "Rejected",
+  "feedback": "Too generic — add details about your experience and product quality.",
+  "suggestion": "The headphones have excellent sound quality and comfortable fit, but the battery could last longer.",
+  "examples_used": ["12", "45"]
+}}
+"""

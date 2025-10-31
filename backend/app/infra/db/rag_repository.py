@@ -32,18 +32,20 @@ class SqlModelRagRepository(RagRepository):
 
         sql = text(
             """
+            SET LOCAL ivfflat.probes = 15;
+
             SELECT
                 r.id,
                 r.text,
-                1 - (r.embedding <=> :q::vector) AS score
+                1 - (r.embedding <=> CAST(:q AS vector)) AS score
             FROM review AS r
             WHERE r.embedding IS NOT NULL
-            ORDER BY r.embedding <=> :q::vector ASC
+            ORDER BY r.embedding <=> CAST(:q AS vector) ASC
             LIMIT :k
             """
         )
 
-        rows = self.db.exec(sql, {"q": q_vec, "k": k}).all()
+        rows = self.db.execute(sql, {"q": q_vec, "k": k}).all()
 
         hits = [RagHit(id=row.id, text=row.text, score=float(row.score)) for row in rows]
 
