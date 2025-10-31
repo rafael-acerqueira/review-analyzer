@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Optional, List
 
 from app.domain.reviews.entities import ReviewEntity
-from app.domain.reviews.interfaces import ReviewRepository, SentimentAnalyzer, SuggestionEngine, DraftProvider
+from app.domain.reviews.interfaces import ReviewRepository, SentimentAnalyzer, SuggestionEngine
 from app.domain.reviews.exceptions import InvalidReview
 
 from app.domain.rag.interfaces import Embedder
@@ -88,9 +88,7 @@ class SaveApprovedReview:
 
         doc_text = corrected or original
 
-        embedding: List[float] = self.embedder.embed(doc_text)
-        if not embedding:
-            raise ValueError("Failed to generate embedding")
+        embedding = self.embedder.embed(doc_text) or []
 
         return self.repo.create_approved(
             user_id=data.user_id,
@@ -100,7 +98,7 @@ class SaveApprovedReview:
             status=status,
             feedback=(data.feedback or ""),
             suggestion=(data.suggestion or ""),
-            embedding=embedding,
+            embedding=embedding if embedding else None,
         )
 
 class ListMyReviews:
