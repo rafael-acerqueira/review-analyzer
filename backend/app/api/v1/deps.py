@@ -27,6 +27,8 @@ from app.domain.admin.use_cases import (
     GetStats as AdminGetStats
 
 )
+from app.services.suggestion_service import SuggestionService
+
 
 def _get_session_dep():
     from app.database import get_session  # lazy import
@@ -84,9 +86,27 @@ def get_sentiment_analyzer():
     from app.services.sentiment_analysis_service import SentimentAnalysisService
     return SentimentAnalysisService()
 
-def get_suggestion_engine():
-    from app.services.suggestion_service import SuggestionService
-    return SuggestionService()
+def get_query_embedder() -> LocalSentenceTransformerEmbedder:
+    return _query_embedder_singleton()
+
+def get_rag_repo(db: Session = Depends(get_db)) -> SqlModelRagRepository:
+    return SqlModelRagRepository(db)
+
+def get_rag_uc(
+    embedder: LocalSentenceTransformerEmbedder = Depends(get_query_embedder),  # usa "query: " (E5)
+    repo: SqlModelRagRepository = Depends(get_rag_repo),
+) -> SearchRag:
+    return SearchRag(embedder=embedder, repo=repo)
+
+def get_suggestion_engine(
+    rag_uc: SearchRag = Depends(get_rag_uc),
+    qembed: LocalSentenceTransformerEmbedder = Depends(get_query_embedder),
+) -> SuggestionService:
+    def _retriever(query_text: str, k: int, min_score: float | None):
+        res = rag_uc.execute(text=query_text, k=k, min_score=min_score)
+        return [{"id": h.id, "text": h.text, "score": h.score} for h in res.hits]
+
+    return SuggestionService(retriever=_retriever, query_embedder=qembed)
 
 def get_evaluate_text_uc(
     sentiment = Depends(get_sentiment_analyzer),
@@ -104,14 +124,12 @@ def get_list_my_reviews_uc(
 
 @lru_cache(maxsize=1)
 def _query_embedder_singleton() -> LocalSentenceTransformerEmbedder:
-    return LocalSentenceTransformerEmbedder()
+    return LocalSentenceTransformerEmbedder(query_prefix="query: ")
 
 @lru_cache(maxsize=1)
 def _doc_embedder_singleton() -> LocalSentenceTransformerEmbedder:
     return LocalSentenceTransformerEmbedder(query_prefix="passage: ")
 
-def get_query_embedder() -> LocalSentenceTransformerEmbedder:
-    return _query_embedder_singleton()
 
 def get_doc_embedder() -> LocalSentenceTransformerEmbedder:
     return _doc_embedder_singleton()
@@ -122,14 +140,6 @@ def get_save_approved_uc(
 ) -> SaveApprovedReview:
     return SaveApprovedReview(repo=repo, embedder=doc_embedder)
 
-def get_rag_repo(db: Session = Depends(get_db)) -> SqlModelRagRepository:
-    return SqlModelRagRepository(db)
-
-def get_rag_uc(
-    embedder: LocalSentenceTransformerEmbedder = Depends(get_query_embedder),  # usa "query: " (E5)
-    repo: SqlModelRagRepository = Depends(get_rag_repo),
-) -> SearchRag:
-    return SearchRag(embedder=embedder, repo=repo)
 
 def get_admin_repo(db: Session = Depends(get_db)) -> SqlModelAdminRepository:
     return SqlModelAdminRepository(db)

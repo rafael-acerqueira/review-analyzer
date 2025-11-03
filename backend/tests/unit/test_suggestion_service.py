@@ -11,7 +11,8 @@ def test_review_reject(mock_call_llm):
     }
     '''
 
-    result = SuggestionService.evaluate("Bad")
+    svc = SuggestionService()
+    result = svc.evaluate(text="Bad")
     assert result["status"] == "Rejected"
     assert result["feedback"]
     assert result["suggestion"]
@@ -25,6 +26,8 @@ def test_review_accepted(mock_call_llm):
       "suggestion": ""
     }
     '''
-    result = SuggestionService.evaluate("Amazing product, battery lasted 3 days.")
+    svc = SuggestionService()
+
+    result = svc.evaluate(text="Amazing product, battery lasted 3 days.")
     assert result["status"] == "Accepted"
     assert result["suggestion"] == ""
