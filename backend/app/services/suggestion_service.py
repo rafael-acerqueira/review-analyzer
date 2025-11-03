@@ -75,9 +75,8 @@ class SuggestionService:
             except Exception:
                 examples = []
 
-            examples_block = _render_examples_block(examples)
-            prompt = suggestion_prompt_template(review_text=user_text, examples_block=examples_block)
-        print(examples_block)
+        prompt = suggestion_prompt_template(review_text=user_text, examples_block=_render_examples_block(examples))
+
         try:
             raw = call_llm(prompt)
         except Exception:
