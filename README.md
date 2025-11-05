@@ -72,6 +72,13 @@ This approach increases relevance, consistency, and accuracy of the responses, a
 
 ## 🛠️ Running Locally
 
+### Required Software
+- **Python**: 3.10.x
+- **uv** (Python package manager): ≥ 0.4
+- **PostgreSQL**: 16 with **pgvector** extension
+- **Node.js**: 20 LTS
+- **npm** (or pnpm/yarn)
+
 ### 1. Clone the project
 
 ```bash
@@ -81,43 +88,118 @@ cd review-analyzer
 
 ### 2. Setup the backend
 
+#### Use uv to install dependencies from pyproject.toml
 ```bash
 cd backend
-python -m venv .env
-source .env/bin/activate
-pip install -r requirements.txt
-uvicorn app.main:app --reload
+uv sync --locked --extra dev
 ```
 
-> Set your Hugging Face token in `.env` as `HF_TOKEN=...`
+#### Create backend/.env
+```bash
+# --- Core ---
+DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/review_analyzer
+SECRET_KEY=dev-secret
+
+# --- Hugging Face / LLM (optional, if using HF Inference) ---
+HF_TOKEN=<your_hf_token>
+
+# --- Embeddings / RAG ---
+EMBEDDINGS_MODEL_NAME=intfloat/multilingual-e5-small
+RAG_ENABLED=true
+
+# RAG tuning (optional)
+RAG_TOPN=50
+RAG_MMR_LAMBDA=0.7
+RAG_MMR_K=8
+RAG_RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+RAG_RERANKER_TOPK=3
+
+# Hardware / E5 prefix
+RAG_EMBEDDING_DEVICE=cpu
+RAG_E5_QUERY_PREFIX="query: "
+
+
+```
+
+#### Run migrations
+
+> uv run alembic upgrade head
+
+
+#### Start the API
+> uv run uvicorn app.main:app --reload
+
+
+#### Verify the backend is running
+> Open http://localhost:8000/docs
+
+Or ping the RAG endpoint (it may return empty results until you save embedded reviews):
+
+```bash
+curl -X POST http://localhost:8000/api/v1/rag/search \
+  -H 'Content-Type: application/json' \
+  -d '{"text":"battery life", "k":3}'
+```
+
 
 ### 3. Setup the frontend
 
 ```bash
 cd frontend
 npm install
-npm run dev
 ```
 
-> Ensure `.env.local` has:
-> `API_URL=http://localhost:8000`
-> `NEXTAUTH_URL=http://localhost:3000`
-> `NEXTAUTH_SECRET=your-secret`
-> `GOOGLE_CLIENT_ID=your-google-client`
-> `GOOGLE_CLIENT_SECRET=your-client-secret`
+#### Create frontend/.env.local (example values)
 
+```bash
+# Backend URL your Next.js code calls
+API_URL=http://localhost:8000
+
+# Where your Next app is reachable
+NEXTAUTH_URL=http://localhost:3000
+
+# NextAuth secret (any strong random string for local)
+NEXTAUTH_SECRET=dev-secret
+
+# Google OAuth (optional for local testing)
+GOOGLE_CLIENT_ID=<google_client_id>
+GOOGLE_CLIENT_SECRET=<google_client_secret>
+
+```
+
+#### Run the dev server
+> npm run dev
+
+#### Verify the frontend is running
+> Open http://localhost:3000
+> If the frontend can’t reach the API, check that the backend is up (see the verification step).
 ---
 
 ## 🧪 Running Tests
 
-```bash
-# Unit & Integration (backend)
-cd backend
-PYTHONPATH=. pytest
+### Backend (unit + integration)
+#### Use a dedicated test databse
 
-# E2E (frontend)
+```bash
+cd backend
+export DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/review_analyzer_test
+
+# Ensure the extension exists in the test DB once:
+psql postgresql://postgres:postgres@localhost:5432/review_analyzer_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+# Run tests
+uv run pytest
+
+```
+
+> Test fixtures create/drop schema and use the pgvector extension. A separate DB avoids clobbering dev data.
+
+### Frontend (Playwright e2e)
+```bash
 cd frontend
+npx playwright install
 npx playwright test
+
 ```
 
 ---
@@ -202,6 +284,14 @@ review-analyzer/
 ├── .env.example
 └── .gitignore
 ```
+---
+## 📝 Notes & Tips
+- NEXTAUTH_URL must match the actual URL users hit. Locally: http://localhost:3000. In containers/tunnels: use the public/local URL.
+- Verify backend first (OpenAPI UI or cURL) before npm run dev to avoid confusing frontend errors.
+- Embeddings on save: approved reviews are embedded on creation, so /rag/search immediately has data.
+- pgvector errors like type "vector" does not exist mean the extension isn’t created in the DB used by DATABASE_URL.
+- Switching models/devices: adjust EMBEDDINGS_MODEL_NAME and RAG_EMBEDDING_DEVICE (e.g., cpu vs. cuda) in .env.
+
 
 ---
 
