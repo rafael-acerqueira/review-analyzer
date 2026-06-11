@@ -11,7 +11,7 @@
 ## 🚀 Features
 
 - ✅ Sentiment classification using `distilbert-base-uncased-finetuned-sst-2-english`
-- ✅ Review quality evaluation with `microsoft/phi-4`
+- ✅ Review quality evaluation with a configurable Hugging Face chat model
 - ✅ LLM-generated suggestions to help improve poor reviews
 - ✅ Frontend built with Next.js and React Query
 - ✅ Full backend powered by FastAPI
@@ -26,7 +26,7 @@
 
 - **Frontend:** Next.js, TypeScript, React Query, TailwindCSS
 - **Backend:** FastAPI, Hugging Face Transformers, Python, pgvector (Postgres)
-- **LLM:** Hugging Face Inference API (`phi-4`)
+- **LLM:** Hugging Face Inference API (default: `Qwen/Qwen2.5-7B-Instruct`)
 - **Sentiment Model:** `distilbert-base-uncased-finetuned-sst-2-english`
 - **Testing:** pytest, Playwright
 - **Infra:** Render, Vercel
@@ -103,6 +103,14 @@ INTERNAL_AUTH_SECRET=dev-internal-secret
 
 # --- Hugging Face / LLM (optional, if using HF Inference) ---
 HF_TOKEN=<your_hf_token>
+HF_PROVIDER=together
+HF_MODEL=Qwen/Qwen2.5-7B-Instruct
+LLM_CACHE_ENABLED=false
+LLM_TEMPERATURE=0.3
+LLM_MAX_TOKENS=150
+LLM_TIMEOUT_SECONDS=30
+LLM_RETRY_ATTEMPTS=2
+LLM_RETRY_BACKOFF_SECONDS=0.5
 
 # --- Embeddings / RAG ---
 EMBEDDINGS_MODEL_NAME=intfloat/multilingual-e5-small
