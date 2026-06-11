@@ -99,6 +99,7 @@ uv sync --locked --extra dev
 # --- Core ---
 DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/review_analyzer
 SECRET_KEY=dev-secret
+INTERNAL_AUTH_SECRET=dev-internal-secret
 
 # --- Hugging Face / LLM (optional, if using HF Inference) ---
 HF_TOKEN=<your_hf_token>
@@ -160,6 +161,9 @@ NEXTAUTH_URL=http://localhost:3000
 
 # NextAuth secret (any strong random string for local)
 NEXTAUTH_SECRET=dev-secret
+
+# Shared secret used by Next.js server routes to call protected FastAPI auth endpoints
+INTERNAL_AUTH_SECRET=dev-internal-secret
 
 # Google OAuth (optional for local testing)
 GOOGLE_CLIENT_ID=<google_client_id>
