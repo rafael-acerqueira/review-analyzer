@@ -30,6 +30,7 @@ def test_create_review_route(client, mock_user):
     data = response.json()
     assert data["user_id"] == mock_user.id
     assert data["id"] > 0
+    assert data["status"] == "Accepted"
     assert data["corrected_text"] == "The camera exceeded my expectations, with excellent battery life and image quality."
 
 def test_authenticated_user_sees_only_their_reviews(client, user_and_token, session):

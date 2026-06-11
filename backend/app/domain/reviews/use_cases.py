@@ -77,8 +77,8 @@ class SaveApprovedReview:
     embedder: Embedder
 
     def execute(self, data: SaveApprovedInput) -> ReviewEntity:
-        status = (data.status or "").strip().lower()
-        if status != "accepted":
+        status = (data.status or "").strip()
+        if status.lower() != "accepted":
             raise ValueError("Only Accepted reviews can be created")
 
         original = (data.text or "").strip()
@@ -95,7 +95,7 @@ class SaveApprovedReview:
             text=original,
             corrected_text=corrected,
             sentiment=(data.sentiment or "unknown"),
-            status=status,
+            status="Accepted",
             feedback=(data.feedback or ""),
             suggestion=(data.suggestion or ""),
             embedding=embedding if embedding else None,
