@@ -39,13 +39,19 @@ class _FakeClient:
 
 def test_call_llm_retries_transient_failure(monkeypatch):
     completions = _FakeCompletions(failures_before_success=1)
-    monkeypatch.setattr(clients, "HF_TOKEN", "test-token")
-    monkeypatch.setattr(clients, "client", _FakeClient(completions))
-    monkeypatch.setattr(clients, "LLM_RETRY_ATTEMPTS", 2)
-    monkeypatch.setattr(clients, "LLM_RETRY_BACKOFF_SECONDS", 0)
+    llm_client = clients.HuggingFaceLLMClient(
+        client=_FakeClient(completions),
+        token="test-token",
+        model="test-model",
+        provider="test-provider",
+        temperature=0.3,
+        max_tokens=150,
+        retry_attempts=2,
+        retry_backoff_seconds=0,
+    )
     monkeypatch.setattr(clients.time, "sleep", lambda _: None)
 
-    result = clients._call_llm_uncached("prompt")
+    result = llm_client.complete("prompt")
 
     assert completions.calls == 2
     assert json.loads(result)["status"] == "Accepted"
@@ -53,13 +59,19 @@ def test_call_llm_retries_transient_failure(monkeypatch):
 
 def test_call_llm_returns_fallback_after_retry_exhaustion(monkeypatch):
     completions = _FakeCompletions(failures_before_success=99)
-    monkeypatch.setattr(clients, "HF_TOKEN", "test-token")
-    monkeypatch.setattr(clients, "client", _FakeClient(completions))
-    monkeypatch.setattr(clients, "LLM_RETRY_ATTEMPTS", 2)
-    monkeypatch.setattr(clients, "LLM_RETRY_BACKOFF_SECONDS", 0)
+    llm_client = clients.HuggingFaceLLMClient(
+        client=_FakeClient(completions),
+        token="test-token",
+        model="test-model",
+        provider="test-provider",
+        temperature=0.3,
+        max_tokens=150,
+        retry_attempts=2,
+        retry_backoff_seconds=0,
+    )
     monkeypatch.setattr(clients.time, "sleep", lambda _: None)
 
-    result = clients._call_llm_uncached("prompt")
+    result = llm_client.complete("prompt")
 
     assert completions.calls == 2
     assert json.loads(result) == {
@@ -71,10 +83,18 @@ def test_call_llm_returns_fallback_after_retry_exhaustion(monkeypatch):
 
 def test_call_llm_returns_fallback_when_token_is_missing(monkeypatch):
     completions = _FakeCompletions(failures_before_success=0)
-    monkeypatch.setattr(clients, "HF_TOKEN", "")
-    monkeypatch.setattr(clients, "client", _FakeClient(completions))
+    llm_client = clients.HuggingFaceLLMClient(
+        client=_FakeClient(completions),
+        token="",
+        model="test-model",
+        provider="test-provider",
+        temperature=0.3,
+        max_tokens=150,
+        retry_attempts=2,
+        retry_backoff_seconds=0,
+    )
 
-    result = clients._call_llm_uncached("prompt")
+    result = llm_client.complete("prompt")
 
     assert completions.calls == 0
     assert json.loads(result) == {
