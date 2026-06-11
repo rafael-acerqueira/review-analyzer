@@ -112,6 +112,9 @@ LLM_TIMEOUT_SECONDS=30
 LLM_RETRY_ATTEMPTS=2
 LLM_RETRY_BACKOFF_SECONDS=0.5
 
+# --- Sentiment model ---
+SENTIMENT_MODEL_NAME=distilbert-base-uncased-finetuned-sst-2-english
+
 # --- Embeddings / RAG ---
 EMBEDDINGS_MODEL_NAME=intfloat/multilingual-e5-small
 RAG_ENABLED=true

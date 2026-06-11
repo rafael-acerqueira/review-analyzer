@@ -11,8 +11,10 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 LLM_ERROR_RESPONSE = '{"status": "Rejected", "feedback": "AI error", "suggestion": ""}'
-
-sentiment_pipeline = pipeline("sentiment-analysis", model="distilbert-base-uncased-finetuned-sst-2-english")
+SENTIMENT_MODEL_NAME = os.getenv(
+    "SENTIMENT_MODEL_NAME",
+    "distilbert-base-uncased-finetuned-sst-2-english",
+)
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 HF_MODEL = os.getenv("HF_MODEL", "Qwen/Qwen2.5-7B-Instruct")
@@ -24,6 +26,10 @@ LLM_TIMEOUT_SECONDS = float(os.getenv("LLM_TIMEOUT_SECONDS", "30"))
 LLM_RETRY_ATTEMPTS = max(1, int(os.getenv("LLM_RETRY_ATTEMPTS", "2")))
 LLM_RETRY_BACKOFF_SECONDS = float(os.getenv("LLM_RETRY_BACKOFF_SECONDS", "0.5"))
 
+
+@lru_cache(maxsize=1)
+def get_sentiment_pipeline():
+    return pipeline("sentiment-analysis", model=SENTIMENT_MODEL_NAME)
 
 
 class HuggingFaceLLMClient:
