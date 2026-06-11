@@ -33,7 +33,7 @@ def _render_examples_block(docs: List[Dict[str, Any]]) -> str:
         base = f'[ID={d.get("id","NA")} | score={d.get("score",0.0):.2f}]'
         if "rerank_score" in d:
             base += f' [rerank={d["rerank_score"]:.2f}]'
-        lines.append(f'{base}\n"{snippet}"')
+        lines.append(f'{base}\n<UNTRUSTED_REVIEW_TEXT>\n{snippet}\n</UNTRUSTED_REVIEW_TEXT>')
     return "\n\n".join(lines)
 
 def _parse_llm_json(raw: str) -> Dict[str, Any]:
