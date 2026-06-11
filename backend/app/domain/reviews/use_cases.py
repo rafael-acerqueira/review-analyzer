@@ -75,10 +75,11 @@ class SaveApprovedInput:
 class SaveApprovedReview:
     repo: ReviewRepository
     embedder: Embedder
+    expected_embedding_dim: int = 384
 
     def execute(self, data: SaveApprovedInput) -> ReviewEntity:
-        status = (data.status or "").strip().lower()
-        if status != "accepted":
+        status = (data.status or "").strip()
+        if status.lower() != "accepted":
             raise ValueError("Only Accepted reviews can be created")
 
         original = (data.text or "").strip()
@@ -89,13 +90,17 @@ class SaveApprovedReview:
         doc_text = corrected or original
 
         embedding = self.embedder.embed(doc_text) or []
+        if embedding and len(embedding) != self.expected_embedding_dim:
+            raise ValueError(
+                f"Invalid embedding dimension: expected {self.expected_embedding_dim}, got {len(embedding)}"
+            )
 
         return self.repo.create_approved(
             user_id=data.user_id,
             text=original,
             corrected_text=corrected,
             sentiment=(data.sentiment or "unknown"),
-            status=status,
+            status="Accepted",
             feedback=(data.feedback or ""),
             suggestion=(data.suggestion or ""),
             embedding=embedding if embedding else None,

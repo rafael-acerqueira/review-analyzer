@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import hmac
+import os
+
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 
 from app.schemas import (
     UserCreate,
@@ -34,6 +37,14 @@ from app.domain.auth.exceptions import (
 
 router = APIRouter()
 
+
+def _require_internal_auth(x_internal_auth: str | None = Header(default=None)) -> None:
+    expected = os.getenv("INTERNAL_AUTH_SECRET") or os.getenv("SECRET_KEY")
+    if not expected:
+        raise HTTPException(status_code=500, detail="Internal auth is not configured")
+    if not x_internal_auth or not hmac.compare_digest(x_internal_auth, expected):
+        raise HTTPException(status_code=403, detail="Not authorized")
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_user(
     payload: UserCreate,
@@ -50,6 +61,7 @@ def register_user(
 @router.post("/google")
 def google_login(
     payload: GoogleUser,
+    _: None = Depends(_require_internal_auth),
     use_case: GoogleLogin = Depends(get_google_login_use_case),
 ):
 
@@ -83,6 +95,7 @@ def login(
 @router.post("/token/exchange")
 def token_exchange(
     payload: TokenExchangeIn,
+    _: None = Depends(_require_internal_auth),
     use_case: TokenExchange = Depends(get_token_exchange_use_case),
 ):
 

@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
   const apiUrl = process.env.API_URL
+  const internalAuthSecret = process.env.INTERNAL_AUTH_SECRET || process.env.NEXTAUTH_SECRET
 
-  if (!apiUrl) {
+  if (!apiUrl || !internalAuthSecret) {
     return NextResponse.json(
-      { detail: 'API_URL is not configured.' },
+      { detail: 'API auth environment is not configured.' },
       { status: 500 }
     )
   }
@@ -17,6 +18,7 @@ export async function POST(req: NextRequest) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'X-Internal-Auth': internalAuthSecret,
       },
       body: JSON.stringify(body),
     })

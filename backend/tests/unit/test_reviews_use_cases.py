@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Optional, List, Dict
 
 from app.domain.reviews.entities import ReviewEntity
-from app.domain.reviews.use_cases import EvaluateText, ListMyReviews
+from app.domain.reviews.use_cases import EvaluateText, ListMyReviews, SaveApprovedInput, SaveApprovedReview
 from app.domain.reviews.exceptions import InvalidReview
 from app.domain.reviews.interfaces import (
     ReviewRepository, SentimentAnalyzer, SuggestionEngine, DraftProvider
@@ -24,8 +24,10 @@ class FakeReviewRepository(ReviewRepository):
         text: str,
         corrected_text: str,
         sentiment: Optional[str],
-        suggestion: Optional[str],
+        status: str = "Accepted",
+        suggestion: Optional[str] = None,
         feedback: Optional[str] = None,
+        embedding: Optional[List[float]] = None,
     ) -> ReviewEntity:
         rid = self._auto_id
         self._auto_id += 1
@@ -35,7 +37,7 @@ class FakeReviewRepository(ReviewRepository):
             text=text,
             corrected_text=corrected_text,
             sentiment=sentiment,
-            status="approved",
+            status=status,
             suggestion=suggestion,
             feedback=feedback,
             created_at=None,
@@ -94,6 +96,14 @@ class FakeDraftProvider(DraftProvider):
         return self._store[token]
 
 
+class FakeEmbedder:
+    def __init__(self, embedding: List[float]):
+        self.embedding = embedding
+
+    def embed(self, text: str) -> List[float]:
+        return self.embedding
+
+
 
 
 def test_evaluate_text_rejects_too_short():
@@ -133,3 +143,39 @@ def test_list_my_reviews_returns_saved_reviews():
     uc = ListMyReviews(reviews=repo)
     items = uc.execute(user_id=7)
     assert [r.id for r in items] == [r1.id, r2.id]
+
+def test_save_approved_review_persists_valid_embedding_dimension():
+    repo = FakeReviewRepository()
+    uc = SaveApprovedReview(repo=repo, embedder=FakeEmbedder([0.1] * 384))
+
+    ent = uc.execute(
+        SaveApprovedInput(
+            user_id=1,
+            text="original",
+            corrected_text="corrected",
+            sentiment="POSITIVE",
+            status="Accepted",
+            feedback="ok",
+            suggestion="",
+        )
+    )
+
+    assert ent.id == 1
+    assert ent.status == "Accepted"
+
+def test_save_approved_review_rejects_invalid_embedding_dimension():
+    repo = FakeReviewRepository()
+    uc = SaveApprovedReview(repo=repo, embedder=FakeEmbedder([0.1] * 3))
+
+    with pytest.raises(ValueError, match="Invalid embedding dimension: expected 384, got 3"):
+        uc.execute(
+            SaveApprovedInput(
+                user_id=1,
+                text="original",
+                corrected_text="corrected",
+                sentiment="POSITIVE",
+                status="Accepted",
+                feedback="ok",
+                suggestion="",
+            )
+        )

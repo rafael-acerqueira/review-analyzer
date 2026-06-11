@@ -4,10 +4,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
 
   const apiUrl = process.env.API_URL;
+  const internalAuthSecret = process.env.INTERNAL_AUTH_SECRET || process.env.NEXTAUTH_SECRET;
 
-  if (!apiUrl) {
+  if (!apiUrl || !internalAuthSecret) {
     return NextResponse.json(
-      { detail: 'API_URL is not configured in environment variables.' },
+      { detail: 'API auth environment is not configured.' },
       { status: 500 }
     );
   }
@@ -17,7 +18,8 @@ export async function POST(req: NextRequest) {
     const response = await fetch(`${apiUrl}/api/v1/auth/token/exchange`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'X-Internal-Auth': internalAuthSecret,
       },
       body: JSON.stringify(body),
     });

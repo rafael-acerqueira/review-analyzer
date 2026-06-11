@@ -60,7 +60,7 @@ export default function ReviewForm() {
       if (!llmFeedback) {
         throw new Error('LLM is missing.');
       }
-      createReview({
+      return createReview({
         text: originalReview,
         corrected_text: correctedText,
         sentiment: llmFeedback.sentiment,
