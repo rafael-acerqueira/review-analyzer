@@ -196,3 +196,57 @@ def test_review_uses_configured_default_rag_min_score(mock_call_llm, mock_rerank
     svc.evaluate(text="Battery bad")
 
     assert seen_min_scores == [0.42]
+
+@patch("app.services.suggestion_service.call_llm")
+def test_review_continues_when_rag_retrieval_fails(mock_call_llm, caplog):
+    mock_call_llm.return_value = '''
+    {
+      "status": "Rejected",
+      "feedback": "Use more detail.",
+      "suggestion": "",
+      "examples_used": []
+    }
+    '''
+
+    def retriever(query_text, k, min_score):
+        raise RuntimeError("database unavailable")
+
+    svc = SuggestionService(retriever=retriever)
+
+    with caplog.at_level(logging.WARNING, logger="app.services.suggestion_service"):
+        result = svc.evaluate(text="Battery bad")
+
+    assert result["status"] == "Rejected"
+    assert result["examples_used"] == []
+    assert any(record.message == "RAG retrieval failed; evaluating without examples" for record in caplog.records)
+
+@patch("app.services.suggestion_service.rerank")
+@patch("app.services.suggestion_service.call_llm")
+def test_review_continues_when_rag_reranker_fails(mock_call_llm, mock_rerank, caplog):
+    mock_call_llm.return_value = '''
+    {
+      "status": "Rejected",
+      "feedback": "Use more detail.",
+      "suggestion": "",
+      "examples_used": ["10"]
+    }
+    '''
+    mock_rerank.side_effect = RuntimeError("reranker unavailable")
+
+    def retriever(query_text, k, min_score):
+        return [
+            {"id": 10, "text": "Approved review about battery life.", "score": 0.91},
+            {"id": 20, "text": "Approved review about screen brightness.", "score": 0.88},
+        ]
+
+    svc = SuggestionService(retriever=retriever)
+
+    with caplog.at_level(logging.WARNING, logger="app.services.suggestion_service"):
+        result = svc.evaluate(text="Battery bad")
+
+    assert result["status"] == "Rejected"
+    assert result["examples_used"] == ["10"]
+    assert any(
+        record.message == "RAG reranker failed; using top candidates without reranking"
+        for record in caplog.records
+    )
