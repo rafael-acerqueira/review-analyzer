@@ -70,6 +70,19 @@ def _as_text(value: Any, max_chars: Optional[int] = None) -> str:
     text = text.strip()
     return text[:max_chars] if max_chars is not None else text
 
+def _normalize_examples_used(value: Any, allowed_ids: set[str]) -> List[str]:
+    if value is None:
+        return []
+    raw_items = value if isinstance(value, list) else [value]
+    examples_used = []
+
+    for item in raw_items:
+        example_id = str(item).strip()
+        if example_id and example_id in allowed_ids and example_id not in examples_used:
+            examples_used.append(example_id)
+
+    return examples_used
+
 RetrieverFn = Callable[[str, int, Optional[float]], List[Dict[str, Any]]]
 
 class Embedder(Protocol):
@@ -122,17 +135,29 @@ class SuggestionService:
         try:
             raw = call_llm(prompt)
         except Exception:
-            return {"status": "Rejected", "feedback": "AI error. Please try again later.", "suggestion": ""}
+            return {
+                "status": "Rejected",
+                "feedback": "AI error. Please try again later.",
+                "suggestion": "",
+                "examples_used": [],
+            }
 
         try:
             parsed = _parse_llm_json(raw)
             status = _normalize_status(parsed.get("status"))
             if status is None:
                 status = "Accepted" if len(user_text.split()) >= 20 else "Rejected"
+            allowed_example_ids = {str(d.get("id")) for d in examples if d.get("id") is not None}
             return {
                 "status": status,
                 "feedback": _as_text(parsed.get("feedback"), max_chars=200),
                 "suggestion": _as_text(parsed.get("suggestion")),
+                "examples_used": _normalize_examples_used(parsed.get("examples_used"), allowed_example_ids),
             }
         except json.JSONDecodeError:
-            return {"status": "Rejected", "feedback": "Unexpected AI response.", "suggestion": ""}
+            return {
+                "status": "Rejected",
+                "feedback": "Unexpected AI response.",
+                "suggestion": "",
+                "examples_used": [],
+            }

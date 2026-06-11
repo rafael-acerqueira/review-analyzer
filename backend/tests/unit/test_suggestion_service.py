@@ -86,3 +86,25 @@ def test_review_normalizes_llm_text_fields(mock_call_llm):
     assert result["status"] == "Rejected"
     assert len(result["feedback"]) == 200
     assert result["suggestion"] == '{"text": "Add details about battery life."}'
+
+@patch("app.services.suggestion_service.call_llm")
+def test_review_returns_only_allowed_examples_used(mock_call_llm):
+    mock_call_llm.return_value = '''
+    {
+      "status": "Rejected",
+      "feedback": "Use more detail.",
+      "suggestion": "The battery lasted only three hours during calls.",
+      "examples_used": ["10", "999", "10"]
+    }
+    '''
+
+    def retriever(query_text, k, min_score):
+        return [
+            {"id": 10, "text": "Approved review about battery life.", "score": 0.91},
+            {"id": 20, "text": "Approved review about screen brightness.", "score": 0.88},
+        ]
+
+    svc = SuggestionService(retriever=retriever)
+    result = svc.evaluate(text="Battery bad")
+
+    assert result["examples_used"] == ["10"]
