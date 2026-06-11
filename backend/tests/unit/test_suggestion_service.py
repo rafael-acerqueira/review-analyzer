@@ -170,3 +170,29 @@ def test_review_logs_rag_context_metrics(mock_call_llm, mock_rerank, caplog):
     assert record.rag_examples_count == 2
     assert record.rag_example_ids == ["10", "20"]
     assert record.rag_scores == [0.91, 0.88]
+
+@patch("app.services.suggestion_service.rerank")
+@patch("app.services.suggestion_service.call_llm")
+def test_review_uses_configured_default_rag_min_score(mock_call_llm, mock_rerank, monkeypatch):
+    from app.services import suggestion_service
+
+    mock_call_llm.return_value = '''
+    {
+      "status": "Rejected",
+      "feedback": "Use more detail.",
+      "suggestion": "",
+      "examples_used": []
+    }
+    '''
+    mock_rerank.side_effect = lambda query, docs, model_name, topk: docs[:topk]
+    seen_min_scores = []
+    monkeypatch.setattr(suggestion_service, "RAG_MIN_SCORE", 0.42)
+
+    def retriever(query_text, k, min_score):
+        seen_min_scores.append(min_score)
+        return [{"id": 10, "text": "Approved review about battery life.", "score": 0.91}]
+
+    svc = SuggestionService(retriever=retriever)
+    svc.evaluate(text="Battery bad")
+
+    assert seen_min_scores == [0.42]

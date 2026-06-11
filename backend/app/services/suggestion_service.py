@@ -16,6 +16,7 @@ MMR_L            = float(os.getenv("RAG_MMR_LAMBDA", "0.7"))
 MMR_K            = int(os.getenv("RAG_MMR_K", "8"))
 RERANK_MODEL     = os.getenv("RAG_RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-v2")
 RERANK_TOPK      = int(os.getenv("RAG_RERANKER_TOPK", "3"))
+RAG_MIN_SCORE    = float(os.getenv("RAG_MIN_SCORE", "0.70"))
 MAX_USER_TEXT    = int(os.getenv("MAX_USER_TEXT_CHARS", "2000"))
 MAX_SNIPPET_CHARS= int(os.getenv("MAX_SNIPPET_CHARS", "400"))
 
@@ -101,14 +102,15 @@ class SuggestionService:
         self,
         *,
         text: str,
-        min_score: float = 0.70,
+        min_score: Optional[float] = None,
     ) -> Dict[str, Any]:
         user_text = _cut(text, MAX_USER_TEXT)
+        effective_min_score = RAG_MIN_SCORE if min_score is None else min_score
 
         examples: List[Dict[str, Any]] = []
         if RAG_ENABLED and self.retriever:
             try:
-                cands = self.retriever(user_text, TOPN, min_score) or []
+                cands = self.retriever(user_text, TOPN, effective_min_score) or []
                 retrieved_count = len(cands)
 
                 cands = [

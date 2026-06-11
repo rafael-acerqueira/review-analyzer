@@ -118,6 +118,7 @@ RAG_ENABLED=true
 
 # RAG tuning (optional)
 RAG_TOPN=50
+RAG_MIN_SCORE=0.70
 RAG_MMR_LAMBDA=0.7
 RAG_MMR_K=8
 RAG_RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
