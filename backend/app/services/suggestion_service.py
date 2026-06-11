@@ -83,6 +83,9 @@ def _normalize_examples_used(value: Any, allowed_ids: set[str]) -> List[str]:
 
     return examples_used
 
+def _scores(docs: List[Dict[str, Any]]) -> List[float]:
+    return [round(float(d.get("score", 0.0)), 4) for d in docs]
+
 RetrieverFn = Callable[[str, int, Optional[float]], List[Dict[str, Any]]]
 
 class Embedder(Protocol):
@@ -106,26 +109,43 @@ class SuggestionService:
         if RAG_ENABLED and self.retriever:
             try:
                 cands = self.retriever(user_text, TOPN, min_score) or []
+                retrieved_count = len(cands)
 
                 cands = [
                     {"id": c.get("id"), "text": c.get("text"), "content": c.get("text"), "score": float(c.get("score", 0.0))}
                     for c in cands
                 ]
+                mmr_count: Optional[int] = None
                 if cands and self.query_embedder:
                     try:
                         q = np.asarray(self.query_embedder.embed(user_text), dtype=np.float32)
                         cands = mmr_select(q, cands, k=MMR_K, lamb=MMR_L)
+                        mmr_count = len(cands)
                     except Exception:
                         logger.warning("RAG MMR selection failed; continuing without MMR", exc_info=True)
 
+                reranked_count: Optional[int] = None
                 if cands:
                     try:
                         cands = rerank(user_text, cands, model_name=RERANK_MODEL, topk=RERANK_TOPK)
+                        reranked_count = len(cands)
                     except Exception:
                         logger.warning("RAG reranker failed; using top candidates without reranking", exc_info=True)
                         cands = cands[:RERANK_TOPK]
+                        reranked_count = len(cands)
 
                 examples = cands
+                logger.info(
+                    "RAG context selected",
+                    extra={
+                        "rag_retrieved_count": retrieved_count,
+                        "rag_mmr_count": mmr_count,
+                        "rag_reranked_count": reranked_count,
+                        "rag_examples_count": len(examples),
+                        "rag_example_ids": [str(d.get("id")) for d in examples if d.get("id") is not None],
+                        "rag_scores": _scores(examples),
+                    },
+                )
             except Exception:
                 logger.warning("RAG retrieval failed; evaluating without examples", exc_info=True)
                 examples = []
