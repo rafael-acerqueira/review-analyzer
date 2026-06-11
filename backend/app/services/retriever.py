@@ -28,7 +28,7 @@ def retrieve_candidates(
             score,
         )
         .where(
-            Review.status == "approved",
+            Review.status == "Accepted",
             Review.embedding.isnot(None),
         )
         .order_by(score.desc())
@@ -46,4 +46,3 @@ def retrieve_candidates(
     if min_score is not None:
         out = [x for x in out if x["score"] >= min_score]
     return out
-
