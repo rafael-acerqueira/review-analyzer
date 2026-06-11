@@ -11,13 +11,13 @@ app = FastAPI(title="Review Helper API")
 async def root():
     return {"status": "ok"}
 
-origins = [
-    "https://review-analyzer.vercel.app"
-]
+def _cors_origins() -> list[str]:
+    raw = os.getenv("CORS_ORIGINS", "https://review-analyzer.vercel.app")
+    return [origin.strip() for origin in raw.split(",") if origin.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=_cors_origins(),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
