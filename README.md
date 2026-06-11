@@ -100,6 +100,7 @@ uv sync --locked --extra dev
 DATABASE_URL=postgresql+psycopg2://postgres:postgres@localhost:5432/review_analyzer
 SECRET_KEY=dev-secret
 INTERNAL_AUTH_SECRET=dev-internal-secret
+SQL_ECHO=false
 
 # --- Hugging Face / LLM (optional, if using HF Inference) ---
 HF_TOKEN=<your_hf_token>
