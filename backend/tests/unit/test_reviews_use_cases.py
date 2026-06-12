@@ -116,17 +116,57 @@ def test_evaluate_text_rejects_too_short():
 
 
 def test_evaluate_text_ok():
-    sentiment = FakeSentimentAnalyzer(sentiment="neutral", polarity=0.1)
+    sentiment = FakeSentimentAnalyzer(sentiment="negative", polarity=0.1)
     sugg = FakeSuggestionEngine(status="rejected", suggestion="add more details", feedback="too short")
     uc = EvaluateText(sentiment=sentiment, sugg=sugg, min_length=3)
 
     ev = uc.execute(text="hello world")
     assert ev.text == "hello world"
-    assert ev.sentiment == "neutral"
+    assert ev.sentiment == "NEGATIVE"
     assert ev.polarity == 0.1
-    assert ev.status == "rejected"
+    assert ev.status == "Rejected"
     assert ev.suggestion == "add more details"
     assert ev.feedback == "too short"
+
+
+@pytest.mark.parametrize(
+    ("raw_status", "expected_status"),
+    [
+        ("approved", "Accepted"),
+        ("accepted", "Accepted"),
+        ("rejected", "Rejected"),
+        ("reject", "Rejected"),
+        ("unexpected", "Rejected"),
+    ],
+)
+def test_evaluate_text_normalizes_status_contract(raw_status, expected_status):
+    sentiment = FakeSentimentAnalyzer(sentiment="positive", polarity=0.9)
+    sugg = FakeSuggestionEngine(status=raw_status, suggestion="", feedback="ok")
+    uc = EvaluateText(sentiment=sentiment, sugg=sugg, min_length=3)
+
+    ev = uc.execute(text="hello world")
+
+    assert ev.status == expected_status
+
+
+@pytest.mark.parametrize(
+    ("raw_sentiment", "expected_sentiment"),
+    [
+        ("positive", "POSITIVE"),
+        ("negative", "NEGATIVE"),
+        ("POSITIVE", "POSITIVE"),
+        (None, "UNKNOWN"),
+    ],
+)
+def test_evaluate_text_normalizes_sentiment_contract(raw_sentiment, expected_sentiment):
+    sentiment = FakeSentimentAnalyzer(sentiment=raw_sentiment, polarity=0.9)
+    sugg = FakeSuggestionEngine(status="accepted", suggestion="", feedback="ok")
+    uc = EvaluateText(sentiment=sentiment, sugg=sugg, min_length=3)
+
+    ev = uc.execute(text="hello world")
+
+    assert ev.sentiment == expected_sentiment
+
 
 def test_list_my_reviews_returns_saved_reviews():
     repo = FakeReviewRepository()

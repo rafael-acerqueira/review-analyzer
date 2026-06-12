@@ -7,6 +7,24 @@ from app.domain.reviews.exceptions import InvalidReview
 
 from app.domain.rag.interfaces import Embedder
 
+ACCEPTED_STATUSES = {"accepted", "accept", "approved", "approve"}
+REJECTED_STATUSES = {"rejected", "reject", "denied", "deny"}
+
+
+def normalize_review_status(value: Optional[str]) -> str:
+    status = (value or "").strip().lower()
+    if status in ACCEPTED_STATUSES:
+        return "Accepted"
+    if status in REJECTED_STATUSES:
+        return "Rejected"
+    return "Rejected"
+
+
+def normalize_sentiment(value: Optional[str]) -> str:
+    sentiment = (value or "UNKNOWN").strip()
+    return sentiment.upper() if sentiment else "UNKNOWN"
+
+
 @dataclass(frozen=True)
 class EvaluationResult:
     text: str
@@ -46,9 +64,9 @@ class EvaluateText:
         except Exception:
             status = suggestion = feedback = None
 
-        s = s or "unknown"
+        s = normalize_sentiment(s)
         p = float(p) if p is not None else 0.0
-        status = status or "pending"
+        status = normalize_review_status(status)
         suggestion = suggestion or ""
         feedback = feedback or ""
 
