@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { getMyReviews } from '../../lib/reviewService'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import { FaArrowLeft, FaRegFileAlt } from 'react-icons/fa'
 
 export default function MyReviewsPage() {
   const { status } = useSession()
@@ -18,33 +19,64 @@ export default function MyReviewsPage() {
 
   if (!isAuthed) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5 text-center">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4">My Reviews</h1>
-          <p className="text-gray-600 dark:text-gray-300 mb-2">Login required to view your reviews.</p>
-          <Link href="/" className="text-blue-700 dark:text-blue-400 hover:underline">← Back to Home</Link>
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900">
+          <h1 className="text-2xl font-semibold">My Reviews</h1>
+          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Login required to view your reviews.</p>
+          <Link href="/login" className="mt-5 inline-flex min-h-10 items-center gap-2 border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
+            <FaArrowLeft aria-hidden="true" />
+            Login
+          </Link>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="max-w-lg w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5"
+        className="mx-auto flex max-w-7xl flex-col gap-6"
       >
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-4">
-          My Reviews
-        </h1>
-        {isLoading && <p className="text-center text-gray-500">Loading...</p>}
-        {error && <p className="text-center text-red-500">Failed to load your reviews.</p>}
-        {!isLoading && reviews.length === 0 && (
-          <p className="text-center text-gray-500">You haven’t submitted any reviews yet.</p>
+        <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Review history
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">
+              My Reviews
+            </h1>
+          </div>
+          <Link href="/" className="inline-flex min-h-10 items-center gap-2 border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
+            <FaArrowLeft aria-hidden="true" />
+            New Review
+          </Link>
+        </header>
+
+        {isLoading && (
+          <div className="border border-slate-200 bg-white p-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+            Loading reviews...
+          </div>
         )}
-        <ul className="space-y-3">
+        {error && (
+          <div className="border border-rose-200 bg-rose-50 p-6 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200">
+            Failed to load your reviews.
+          </div>
+        )}
+        {!isLoading && reviews.length === 0 && (
+          <div className="flex min-h-[220px] items-center justify-center border border-dashed border-slate-300 bg-white p-6 text-center dark:border-slate-700 dark:bg-slate-900">
+            <div>
+              <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                <FaRegFileAlt aria-hidden="true" />
+              </div>
+              <p className="text-sm font-medium">No reviews submitted yet</p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Your confirmed analyses will appear here.</p>
+            </div>
+          </div>
+        )}
+        <ul className="grid gap-4">
           <AnimatePresence>
             {reviews.map((review: any) => (
               <motion.li
@@ -52,39 +84,39 @@ export default function MyReviewsPage() {
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -8 }}
-                className="bg-gray-100 dark:bg-gray-700 p-4 rounded-xl shadow"
+                className="border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"
               >
-                <div className="mb-4 flex flex-col md:flex-row gap-4">
-                  <div className="flex-1">
-                    <div className="text-xs text-gray-500 mb-1">Original</div>
-                    <div className="text-base text-gray-900 dark:text-gray-100 bg-gray-50 dark:bg-gray-800 p-2 rounded-lg">
+                <div className="mb-4 grid gap-4 lg:grid-cols-2">
+                  <div>
+                    <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Original</div>
+                    <div className="min-h-24 border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                       {review.text}
                     </div>
                   </div>
                   {review.corrected_text && review.corrected_text.trim() !== "" && (
-                    <div className="flex-1">
-                      <div className="text-xs text-gray-500 mb-1">Corrected</div>
-                      <div className="text-base text-blue-900 dark:text-blue-200 bg-blue-50 dark:bg-blue-900 p-2 rounded-lg">
+                    <div>
+                      <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Corrected</div>
+                      <div className="min-h-24 border border-slate-200 bg-slate-50 p-3 text-sm leading-6 text-slate-800 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200">
                         {review.corrected_text}
                       </div>
                     </div>
                   )}
                 </div>
-                <div className="flex gap-3 text-xs justify-center">
-                  <span className={`px-2 py-1 rounded-full font-semibold ${review.sentiment === 'positive' ? 'bg-green-100 text-green-700' : review.sentiment === 'negative' ? 'bg-red-100 text-red-700' : 'bg-gray-200 text-gray-700'}`}>
+                <div className="flex flex-wrap gap-2 text-xs">
+                  <span className={`border px-2.5 py-1 font-semibold ${review.sentiment === 'positive' || review.sentiment === 'POSITIVE' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200' : review.sentiment === 'negative' || review.sentiment === 'NEGATIVE' ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200' : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200'}`}>
                     {review.sentiment}
                   </span>
-                  <span className={`px-2 py-1 rounded-full font-bold uppercase ${review.status === 'Accepted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`border px-2.5 py-1 font-bold uppercase ${review.status === 'Accepted' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200' : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200'}`}>
                     {review.status}
                   </span>
                 </div>
                 {review.feedback && (
-                  <div className="mt-2 text-xs italic text-gray-600 dark:text-gray-300 text-center">
+                  <div className="mt-4 border-l-4 border-slate-300 bg-slate-50 p-3 text-sm leading-6 text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300">
                     {review.feedback}
                   </div>
                 )}
                 {review.suggestion && review.suggestion.trim() !== '' && (
-                  <div className="mt-1 text-xs text-blue-800 dark:text-blue-200 text-center">
+                  <div className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
                     <strong>Suggestion:</strong> {review.suggestion}
                   </div>
                 )}
@@ -92,11 +124,6 @@ export default function MyReviewsPage() {
             ))}
           </AnimatePresence>
         </ul>
-        <div className="text-center mt-4">
-          <Link href="/" className="text-blue-700 dark:text-blue-400 hover:underline">
-            ← Back to Home
-          </Link>
-        </div>
       </motion.div>
     </div>
   )

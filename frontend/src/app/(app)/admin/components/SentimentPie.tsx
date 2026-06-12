@@ -8,8 +8,9 @@ export function SentimentPie({ by_sentiment }: { by_sentiment: Record<string, nu
   }))
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow w-full flex flex-col items-center mb-8">
-      <span className="mb-2 font-semibold">Reviews by Sentiment</span>
+    <div className="flex w-full flex-col border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <span className="border-b border-slate-200 px-5 py-4 text-base font-semibold dark:border-slate-800">Reviews by Sentiment</span>
+      <div className="flex justify-center p-4">
       <PieChart width={340} height={240}>
         <Pie
           data={chartData}
@@ -27,6 +28,7 @@ export function SentimentPie({ by_sentiment }: { by_sentiment: Record<string, nu
         <Tooltip />
         <Legend />
       </PieChart>
+      </div>
     </div>
   )
 }

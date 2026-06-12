@@ -19,51 +19,45 @@ export default function ReviewDetailsModal({ isOpen, onClose, review }: ModalPro
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        {/* Overlay */}
-        <div className="fixed inset-0 bg-black/40" />
+        <div className="fixed inset-0 bg-slate-950/50" />
 
-        {/* Centered modal */}
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-2 sm:p-4">
-            {/* Modal panel */}
-            <Dialog.Panel className="w-full max-w-md sm:max-w-2xl transform overflow-hidden rounded-2xl bg-white p-4 sm:p-6 text-left align-middle shadow-xl transition-all relative">
-              {/* Close button */}
+            <Dialog.Panel className="relative w-full max-w-2xl transform overflow-hidden border border-slate-200 bg-white text-left align-middle shadow-xl transition-all dark:border-slate-800 dark:bg-slate-900">
               <button
                 onClick={onClose}
-                className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+                className="absolute right-4 top-4 text-slate-500 transition hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
                 aria-label="Close modal"
               >
                 <XMarkIcon className="h-6 w-6" />
               </button>
 
-              {/* Title */}
-              <Dialog.Title as="h3" className="text-lg font-semibold text-gray-900 mb-4">
+              <Dialog.Title as="h3" className="border-b border-slate-200 px-5 py-4 text-base font-semibold text-slate-950 dark:border-slate-800 dark:text-white">
                 Review Details
               </Dialog.Title>
 
-              {/* Scrollable content */}
-              <div className="space-y-4 text-sm text-gray-700 max-h-[60vh] overflow-y-auto pr-1">
+              <div className="max-h-[65vh] space-y-4 overflow-y-auto p-5 text-sm text-slate-700 dark:text-slate-300">
                 <div>
-                  <p className="font-medium">Original Text:</p>
-                  <p className="whitespace-pre-wrap">{review.text}</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Original Text</p>
+                  <p className="whitespace-pre-wrap border border-slate-200 bg-slate-50 p-3 leading-6 dark:border-slate-800 dark:bg-slate-950">{review.text}</p>
                 </div>
 
                 {review.corrected_text && (
                   <div>
-                    <p className="font-medium">Corrected Text:</p>
-                    <p className="whitespace-pre-wrap">{review.corrected_text}</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Corrected Text</p>
+                    <p className="whitespace-pre-wrap border border-slate-200 bg-slate-50 p-3 leading-6 dark:border-slate-800 dark:bg-slate-950">{review.corrected_text}</p>
                   </div>
                 )}
 
                 <div>
-                  <p className="font-medium">Feedback:</p>
-                  <p className="whitespace-pre-wrap">{review.feedback}</p>
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Feedback</p>
+                  <p className="whitespace-pre-wrap border-l-4 border-slate-300 bg-slate-50 p-3 leading-6 dark:border-slate-700 dark:bg-slate-950">{review.feedback}</p>
                 </div>
 
                 {review.suggestion && (
                   <div>
-                    <p className="font-medium">Suggestion:</p>
-                    <p className="whitespace-pre-wrap">{review.suggestion}</p>
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Suggestion</p>
+                    <p className="whitespace-pre-wrap border border-slate-200 bg-slate-50 p-3 leading-6 dark:border-slate-800 dark:bg-slate-950">{review.suggestion}</p>
                   </div>
                 )}
               </div>

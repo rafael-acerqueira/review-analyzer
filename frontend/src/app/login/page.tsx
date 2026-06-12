@@ -64,26 +64,41 @@ export default function AuthForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <Toaster position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5"
+        className="mx-auto grid min-h-[calc(100vh-4rem)] max-w-6xl items-center gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(360px,0.55fr)]"
       >
-        <h2 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">
-          {mode === 'login' ? 'Login to your account' : 'Create a new account'}
-        </h2>
+        <section className="border-b border-slate-200 pb-8 dark:border-slate-800 lg:border-b-0 lg:pb-0">
+          <p className="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Review Analyzer
+          </p>
+          <h1 className="mt-2 max-w-xl text-4xl font-semibold text-slate-950 dark:text-white">
+            Analyze reviews with a clearer operational workflow.
+          </h1>
+          <p className="mt-4 max-w-lg text-sm leading-6 text-slate-600 dark:text-slate-300">
+            Sign in to submit reviews, inspect model feedback, and track review history.
+          </p>
+        </section>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <section className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+          <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+            <h2 className="text-base font-semibold text-slate-950 dark:text-white">
+              {mode === 'login' ? 'Login to your account' : 'Create a new account'}
+            </h2>
+          </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 p-5">
           <input
             type="email"
             placeholder="Email"
             value={email}
             required
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl p-3 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-h-11 w-full border border-slate-300 bg-slate-50 px-3 text-sm text-slate-950 outline-none transition focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
           />
           <input
             type="password"
@@ -91,33 +106,34 @@ export default function AuthForm() {
             value={password}
             required
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl p-3 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="min-h-11 w-full border border-slate-300 bg-slate-50 px-3 text-sm text-slate-950 outline-none transition focus:border-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
           />
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50"
+            className="inline-flex min-h-11 w-full items-center justify-center bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
           >
             {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Register'}
           </button>
         </form>
 
+        <div className="space-y-3 border-t border-slate-200 p-5 dark:border-slate-800">
         <button
           onClick={() => signIn('google', { callbackUrl: '/' })}
-          className="w-full flex items-center justify-center border px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
+          className="inline-flex min-h-11 w-full items-center justify-center gap-2 border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
         >
-          <FcGoogle className="mr-2 text-xl" /> Continue with Google
+          <FcGoogle className="text-xl" /> Continue with Google
         </button>
-
-        <div className="text-center text-gray-500 dark:text-gray-400">or</div>
 
         <button
           onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-          className="w-full flex items-center justify-center border px-4 py-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-100"
+          className="inline-flex min-h-11 w-full items-center justify-center border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
         >
           {mode === 'login' ? 'Create account' : 'Login'}
         </button>
+        </div>
+        </section>
       </motion.div>
     </div>
   )
