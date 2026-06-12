@@ -4,6 +4,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const apiUrl = process.env.API_URL
 
+  if (!apiUrl) {
+    return NextResponse.json(
+      { detail: 'API_URL is not configured.' },
+      { status: 500 }
+    )
+  }
+
   try {
     const response = await fetch(`${apiUrl}/api/v1/auth/register`, {
       method: 'POST',

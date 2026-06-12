@@ -48,7 +48,14 @@ export const authOptions: AuthOptions = {
         password: { label: 'Password', type: 'password' }
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXTAUTH_URL}/api/auth/login`, {
+        const apiUrl = process.env.API_URL
+
+        if (!apiUrl) {
+          console.error('[Credentials Login Error] API_URL is not configured.')
+          return null
+        }
+
+        const res = await fetch(`${apiUrl}/api/v1/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(credentials)
@@ -160,8 +167,8 @@ export const authOptions: AuthOptions = {
 
 
   pages: {
-    signIn: '/auth/login',
-    error: '/auth/login',
+    signIn: '/login',
+    error: '/login',
   },
 
   session: {
