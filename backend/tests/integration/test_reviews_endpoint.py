@@ -9,10 +9,10 @@ def test_post_reviews_200(client, mock_user):
     response = client.post("api/v1/analyze_review", json=payload)
     assert response.status_code == 200
     data = response.json()
-    assert data["status"] in ["approved", "rejected"]
+    assert data["status"] in ["Accepted", "Rejected"]
+    assert data["sentiment"] in ["POSITIVE", "NEGATIVE"]
     assert "feedback" in data
     assert "suggestion" in data
-    assert "sentiment" in data
     assert 0.0 <= data["polarity"] <= 1.0
 
 def test_create_review_route(client, mock_user):
