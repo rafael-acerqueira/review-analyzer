@@ -8,6 +8,7 @@ def test_settings_loads_core_environment(monkeypatch):
     monkeypatch.setenv("SQL_ECHO", "true")
     monkeypatch.setenv("CORS_ORIGINS", " http://localhost:3000, https://example.com ,, ")
     monkeypatch.setenv("PORT", "9999")
+    monkeypatch.setenv("E2E_FAKE_ANALYSIS", "true")
     get_settings.cache_clear()
 
     settings = get_settings()
@@ -18,5 +19,6 @@ def test_settings_loads_core_environment(monkeypatch):
     assert settings.sql_echo is True
     assert settings.cors_origins == ["http://localhost:3000", "https://example.com"]
     assert settings.port == 9999
+    assert settings.e2e_fake_analysis is True
 
     get_settings.cache_clear()
