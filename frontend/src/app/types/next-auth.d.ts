@@ -1,4 +1,4 @@
-import NextAuth, { DefaultSession } from "next-auth";
+export {}
 
 declare module "next-auth" {
   interface Session {
@@ -34,5 +34,6 @@ declare module "next-auth/jwt" {
     };
     access_token?: string;
     refresh_token?: string;
+    access_token_exp?: number | null;
   }
 }

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
-import { deleteReview, listReview } from '../../lib/reviewService'
+import { deleteReview, listReview, type ReviewRead } from '../../lib/reviewService'
 import ReviewFilters from '../../review/components/ReviewFilters'
 import ReviewDetailsModal from '../../review/components/ReviewDetailsModal'
 import toast, { Toaster } from 'react-hot-toast'
@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminPage() {
 
-  const [selectedReview, setSelectedReview] = useState(null)
+  const [selectedReview, setSelectedReview] = useState<ReviewRead | null>(null)
   const [filters, setFilters] = useState<Record<string, string>>({})
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -91,7 +91,7 @@ export default function AdminPage() {
             </thead>
             <tbody>
               <AnimatePresence>
-                {reviews.length > 0 ? (reviews.map((r: any) => (
+                {reviews.length > 0 ? (reviews.map((r: ReviewRead) => (
                   <motion.tr
                     key={r.id}
                     initial={{ opacity: 0, y: 8 }}
