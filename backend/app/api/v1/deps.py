@@ -5,6 +5,7 @@ from functools import lru_cache
 
 from app.domain.rag.use_cases import SearchRag
 from app.domain.reviews.use_cases import SaveApprovedReview
+from app.core.settings import get_settings
 from app.infra.db.admin_repository import SqlModelAdminRepository
 from app.infra.db.rag_repository import SqlModelRagRepository
 from app.infra.db.repositories import SqlModelUserRepository
@@ -28,6 +29,20 @@ from app.domain.admin.use_cases import (
 
 )
 from app.services.suggestion_service import SuggestionService
+
+
+class E2EFakeSentimentAnalyzer:
+    def analyze(self, text: str):
+        return "POSITIVE", 0.99
+
+
+class E2EFakeSuggestionEngine:
+    def evaluate(self, *, text: str):
+        return {
+            "status": "Accepted",
+            "suggestion": "",
+            "feedback": "Accepted by deterministic E2E analysis.",
+        }
 
 
 def _get_session_dep():
@@ -83,6 +98,8 @@ def get_review_repo(db: Session = Depends(get_db)):
     return SqlModelReviewRepository(db)
 
 def get_sentiment_analyzer():
+    if get_settings().e2e_fake_analysis:
+        return E2EFakeSentimentAnalyzer()
     from app.services.sentiment_analysis_service import SentimentAnalysisService
     return SentimentAnalysisService()
 
@@ -102,6 +119,9 @@ def get_suggestion_engine(
     rag_uc: SearchRag = Depends(get_rag_uc),
     qembed: LocalSentenceTransformerEmbedder = Depends(get_query_embedder),
 ) -> SuggestionService:
+    if get_settings().e2e_fake_analysis:
+        return E2EFakeSuggestionEngine()
+
     def _retriever(query_text: str, k: int, min_score: float | None):
         res = rag_uc.execute(text=query_text, k=k, min_score=min_score)
         return [{"id": h.id, "text": h.text, "score": h.score} for h in res.hits]

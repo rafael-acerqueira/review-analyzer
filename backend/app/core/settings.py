@@ -25,6 +25,7 @@ class Settings(BaseModel):
     sql_echo: bool = False
     cors_origins: list[str] = Field(default_factory=list)
     port: int = 7860
+    e2e_fake_analysis: bool = False
 
 
 @lru_cache(maxsize=1)
@@ -36,4 +37,5 @@ def get_settings() -> Settings:
         sql_echo=_env_bool("SQL_ECHO", default=False),
         cors_origins=_env_csv("CORS_ORIGINS", "https://review-analyzer.vercel.app"),
         port=int(os.getenv("PORT", "7860")),
+        e2e_fake_analysis=_env_bool("E2E_FAKE_ANALYSIS", default=False),
     )
