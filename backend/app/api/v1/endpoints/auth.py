@@ -1,7 +1,7 @@
 import hmac
-import os
 
 from fastapi import APIRouter, Depends, Header, HTTPException, status
+from app.core.settings import get_settings
 
 from app.schemas import (
     UserCreate,
@@ -39,7 +39,8 @@ router = APIRouter()
 
 
 def _require_internal_auth(x_internal_auth: str | None = Header(default=None)) -> None:
-    expected = os.getenv("INTERNAL_AUTH_SECRET") or os.getenv("SECRET_KEY")
+    settings = get_settings()
+    expected = settings.internal_auth_secret or settings.secret_key
     if not expected:
         raise HTTPException(status_code=500, detail="Internal auth is not configured")
     if not x_internal_auth or not hmac.compare_digest(x_internal_auth, expected):

@@ -2,13 +2,12 @@ from passlib.context import CryptContext
 from datetime import datetime, timedelta, timezone
 from jose import jwt
 from typing import Optional
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from app.core.settings import get_settings
 
 
-SECRET_KEY = os.getenv("SECRET_KEY")
+settings = get_settings()
+SECRET_KEY = settings.secret_key
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 30
