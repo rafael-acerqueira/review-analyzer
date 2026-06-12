@@ -68,7 +68,8 @@ jobs:
 
       - name: Check API_URL before build
         working-directory: frontend
-        run: echo "API_URL before build is: $API_URL"
+        run: |
+          echo "API_URL before build is: $API_URL"
 
       - name: Build Next.js app
         working-directory: frontend
@@ -103,10 +104,12 @@ jobs:
         run: wait-on tcp:127.0.0.1:8000 --timeout 60000
 
       - name: Show environment DATABASE_URL
-        run: echo $DATABASE_URL
+        run: |
+          echo "$DATABASE_URL"
 
       - name: Print API_URL used by Next.js
-        run: echo $API_URL
+        run: |
+          echo "$API_URL"
 
       - name: Test backend accessibility from runner
         run: |
@@ -114,7 +117,8 @@ jobs:
 
       - name: Print FastAPI env
         working-directory: backend
-        run: uv run python -c "import os; print('DATABASE_URL:', os.getenv('DATABASE_URL')); print('API_URL:', os.getenv('API_URL'))"
+        run: |
+          uv run python -c "import os; print('DATABASE_URL:', os.getenv('DATABASE_URL')); print('API_URL:', os.getenv('API_URL'))"
 
       - name: Start Next.js app
         working-directory: frontend
