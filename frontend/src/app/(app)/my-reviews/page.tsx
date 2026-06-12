@@ -2,7 +2,7 @@
 
 import { useSession } from 'next-auth/react'
 import { useQuery } from '@tanstack/react-query'
-import { getMyReviews } from '../../lib/reviewService'
+import { getMyReviews, type ReviewRead } from '../../lib/reviewService'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { FaArrowLeft, FaRegFileAlt } from 'react-icons/fa'
@@ -78,7 +78,7 @@ export default function MyReviewsPage() {
         )}
         <ul className="grid gap-4">
           <AnimatePresence>
-            {reviews.map((review: any) => (
+            {reviews.map((review: ReviewRead) => (
               <motion.li
                 key={review.id}
                 initial={{ opacity: 0, y: 8 }}

@@ -1,6 +1,6 @@
 'use client'
 
-import { getStats } from '@/app/lib/reviewService'
+import { getStats, type RejectionReason } from '@/app/lib/reviewService'
 import { useQuery } from '@tanstack/react-query'
 import Link from 'next/link'
 import { SentimentPie } from '../components/SentimentPie'
@@ -80,7 +80,7 @@ export default function AdminDashboard() {
           >
             <h2 className="border-b border-slate-200 px-5 py-4 text-base font-semibold text-slate-950 dark:border-slate-800 dark:text-white">Top Rejection Reasons</h2>
             <ul className="divide-y divide-slate-100 dark:divide-slate-800">
-              {data.top_rejection_reasons.map((item: any, idx: number) => (
+              {data.top_rejection_reasons.map((item: RejectionReason, idx: number) => (
                 <li key={idx} className="flex items-center justify-between gap-4 px-5 py-3">
                   <span className="text-sm text-slate-700 dark:text-slate-200">{item.reason}</span>
                   <span className="font-mono text-sm font-semibold text-slate-950 dark:text-white">{item.count}</span>
