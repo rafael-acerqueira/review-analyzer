@@ -9,6 +9,30 @@ type RefreshResponse = {
   token_type?: string;
 };
 
+type TokenExchangeResponse = {
+  access_token?: string;
+  refresh_token?: string;
+};
+
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function parseTokenExchangeResponse(value: unknown): TokenExchangeResponse | null {
+  if (!isObject(value)) return null;
+
+  const accessToken = value.access_token;
+  const refreshToken = value.refresh_token;
+
+  if (accessToken !== undefined && typeof accessToken !== "string") return null;
+  if (refreshToken !== undefined && typeof refreshToken !== "string") return null;
+
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+  };
+}
+
 function decodeExpMs(jwt: string | undefined): number | null {
   if (!jwt) return null;
   try {
@@ -77,20 +101,20 @@ export const authOptions: AuthOptions = {
         token.user = user
         token.access_token = user.access_token;
         token.refresh_token = user.refresh_token
-        token.access_token_exp = decodeExpMs((user as any).access_token)
+        token.access_token_exp = decodeExpMs(user.access_token)
 
         if (user.role) token.user.role = user.role
       }
 
-      const expMs = (token as any).access_token_exp as number | null;
-      const refresh = (token as any).refresh_token as string | undefined;
+      const expMs = token.access_token_exp ?? null;
+      const refresh = token.refresh_token;
 
       if (aboutToExpire(expMs) && refresh) {
         try {
           const refreshed = await refreshWithBackend(refresh);
-          (token as any).access_token = refreshed.access_token;
-          (token as any).refresh_token = refreshed.refresh_token;
-          (token as any).access_token_exp = decodeExpMs(refreshed.access_token);
+          token.access_token = refreshed.access_token;
+          token.refresh_token = refreshed.refresh_token;
+          token.access_token_exp = decodeExpMs(refreshed.access_token);
         } catch (e) {
           console.error("[jwt] refresh failed", e);
         }
@@ -98,8 +122,8 @@ export const authOptions: AuthOptions = {
 
       if (account?.provider === "google" && profile?.email) {
         const sub =
-          (account as any)?.providerAccountId ??
-          (profile as any)?.sub ??
+          account.providerAccountId ??
+          profile.sub ??
           null;
 
         if (sub) {
@@ -112,11 +136,13 @@ export const authOptions: AuthOptions = {
 
             if (res.ok) {
               const ctype = res.headers.get("content-type") || "";
-              const data = ctype.includes("application/json") ? await res.json() : null;
+              const data = ctype.includes("application/json")
+                ? parseTokenExchangeResponse(await res.json())
+                : null;
               if (data?.access_token) {
-                (token as any).access_token = data.access_token;
-                (token as any).access_token_exp = decodeExpMs(data.access_token);
-                if (data.refresh_token) (token as any).refresh_token = data.refresh_token;
+                token.access_token = data.access_token;
+                token.access_token_exp = decodeExpMs(data.access_token);
+                if (data.refresh_token) token.refresh_token = data.refresh_token;
               }
             } else {
               const msg = await res.text();
