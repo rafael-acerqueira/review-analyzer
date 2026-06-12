@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { submitReviewRequest, createReview } from '../../lib/reviewService'
 import toast, { Toaster } from "react-hot-toast"
 import { motion, AnimatePresence } from 'framer-motion'
-import { useSession } from "next-auth/react"
+import { FaCheck, FaPaperPlane, FaRegLightbulb, FaTrash } from 'react-icons/fa'
 
 interface LLMFeedback {
   sentiment: string
@@ -103,111 +103,199 @@ export default function ReviewForm() {
     toast('Review discarded. You can write a new one.', { icon: '🗑️' })
   }
 
+  const wordCount = review.trim() ? review.trim().split(/\s+/).length : 0
+  const isAccepted = llmFeedback?.status === 'Accepted'
+
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
-      <div className="max-w-lg w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 space-y-5">
-        <Toaster position="top-right" />
-        <h1 data-testid="title" className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100">AI Review Analyzer</h1>
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
+      <Toaster position="top-right" />
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <textarea
-            className="w-full border border-gray-300 rounded-xl mb-0 p-4 bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-100 resize-none h-40 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="Tell me your thoughts"
-            required
-            value={review}
-            onChange={(e) => setReview(e.target.value)}
-            disabled={mutation.isPending}
-            readOnly={approved}
-          />
+      <div className="mx-auto flex max-w-7xl flex-col gap-6">
+        <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Review workspace
+            </p>
+            <h1 data-testid="title" className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">
+              AI Review Analyzer
+            </h1>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+              <div className="text-slate-500 dark:text-slate-400">Words</div>
+              <div className="font-semibold">{wordCount}</div>
+            </div>
+            <div className="border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+              <div className="text-slate-500 dark:text-slate-400">Status</div>
+              <div className="font-semibold">{llmFeedback?.status || 'Draft'}</div>
+            </div>
+            <div className="border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900">
+              <div className="text-slate-500 dark:text-slate-400">Sentiment</div>
+              <div className="font-semibold">{llmFeedback?.sentiment || 'Pending'}</div>
+            </div>
+          </div>
+        </header>
 
-          {approved && (
-            <p className="text-xs text-gray-500">Review approved. You can&apos;t edit it. Confirm or discard.</p>
-          )}
+        <form onSubmit={handleSubmit} className="grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.65fr)]">
+          <section className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+              <div>
+                <h2 className="text-base font-semibold">Review draft</h2>
+              </div>
+              {approved && (
+                <span className="bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">
+                  Locked
+                </span>
+              )}
+            </div>
 
-          {!approved && (
-            <button
-              type="submit"
-              className="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-3 rounded-xl transition disabled:opacity-50 cursor-pointer"
-              disabled={mutation.isPending}
-              data-testid="send-to-analysis"
-            >
-              {mutation.isPending ? 'Analyzing...' : 'Send for Analysis'}
-            </button>
-          )}
+            <div className="p-5">
+              <textarea
+                className="min-h-[340px] w-full resize-none border border-slate-300 bg-slate-50 p-4 text-base leading-7 text-slate-950 outline-none transition focus:border-slate-900 disabled:opacity-70 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:focus:border-slate-300"
+                placeholder="Tell me your thoughts"
+                required
+                value={review}
+                onChange={(e) => setReview(e.target.value)}
+                disabled={mutation.isPending}
+                readOnly={approved}
+              />
 
-          <AnimatePresence>
-            {approved && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 10 }}
-                className="flex gap-4"
-              >
-                <button
-                  type="button"
-                  data-testid="confirm-and-submit"
-                  onClick={confirmSubmission}
-                  className="flex-1 bg-green-900 hover:bg-green-800 text-white py-3 font-semibold rounded-xl transition cursor-pointer"
-                >
-                  Confirm and Submit
-                </button>
+              {approved && (
+                <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                  Review approved. Confirm submission or discard this draft.
+                </p>
+              )}
 
-                <button
-                  type="button"
-                  onClick={discardReview}
-                  data-testid="discard"
-                  className="flex-1 bg-red-900 hover:bg-red-800 text-white py-3 font-semibold rounded-xl transition cursor-pointer"
-                >
-                  Discard
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <AnimatePresence>
-            {llmFeedback && (
-              <motion.div
-                key="feedback"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={{ duration: 0.3 }}
-                className="p-4 bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 rounded-xl space-y-4 text-base text-gray-800 dark:text-gray-100"
-              >
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${llmFeedback.sentiment === 'POSITIVE'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-700'
-                    }`}>
-                    {llmFeedback.sentiment}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    Confidence: {(llmFeedback.polarity * 100).toFixed(1)}%
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase ${llmFeedback.status === 'Accepted'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-red-100 text-red-700'
-                    }`}>
-                    {llmFeedback.status === 'Accepted' ? 'ACCEPT' : 'REJECT'}
-                  </span>
-                  <span className="text-sm text-gray-600 dark:text-gray-300 italic" data-testid="feedback-message">
-                    {llmFeedback.feedback}
-                  </span>
-                </div>
-
-                {llmFeedback.suggestion && llmFeedback.suggestion.trim() !== '' && (
-                  <div className="p-3 bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-100 rounded-md italic" data-testid="suggestion-text">
-                    <strong>Suggestion:</strong> {llmFeedback.suggestion}
-                  </div>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                {!approved && (
+                  <button
+                    type="submit"
+                    className="inline-flex min-h-11 items-center justify-center gap-2 bg-slate-950 px-5 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                    disabled={mutation.isPending}
+                    data-testid="send-to-analysis"
+                  >
+                    <FaPaperPlane aria-hidden="true" />
+                    {mutation.isPending ? 'Analyzing...' : 'Send for Analysis'}
+                  </button>
                 )}
-              </motion.div>
-            )}
-          </AnimatePresence>
+
+                <AnimatePresence>
+                  {approved && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="flex w-full flex-col gap-3 sm:flex-row"
+                    >
+                      <button
+                        type="button"
+                        data-testid="confirm-and-submit"
+                        onClick={confirmSubmission}
+                        disabled={createMutation.isPending}
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 bg-emerald-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <FaCheck aria-hidden="true" />
+                        {createMutation.isPending ? 'Saving...' : 'Confirm and Submit'}
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={discardReview}
+                        data-testid="discard"
+                        className="inline-flex min-h-11 flex-1 items-center justify-center gap-2 border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:hover:bg-slate-900"
+                      >
+                        <FaTrash aria-hidden="true" />
+                        Discard
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </section>
+
+          <aside className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+            <div className="border-b border-slate-200 px-5 py-4 dark:border-slate-800">
+              <h2 className="text-base font-semibold">Analysis</h2>
+            </div>
+
+            <div className="p-5">
+              <AnimatePresence mode="wait">
+                {llmFeedback ? (
+                  <motion.div
+                    key="feedback"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-5"
+                  >
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="border border-slate-200 p-3 dark:border-slate-800">
+                        <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Sentiment</div>
+                        <div className={`mt-2 text-sm font-semibold ${llmFeedback.sentiment === 'POSITIVE'
+                          ? 'text-emerald-700 dark:text-emerald-300'
+                          : 'text-rose-700 dark:text-rose-300'
+                          }`}>
+                          {llmFeedback.sentiment}
+                        </div>
+                      </div>
+                      <div className="border border-slate-200 p-3 dark:border-slate-800">
+                        <div className="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Confidence</div>
+                        <div className="mt-2 text-sm font-semibold">
+                          {(llmFeedback.polarity * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className={`border-l-4 p-4 ${isAccepted
+                      ? 'border-emerald-600 bg-emerald-50 text-emerald-950 dark:bg-emerald-950 dark:text-emerald-100'
+                      : 'border-rose-600 bg-rose-50 text-rose-950 dark:bg-rose-950 dark:text-rose-100'
+                      }`}>
+                      <div className="mb-2 text-xs font-bold uppercase tracking-wide">
+                        {isAccepted ? 'ACCEPT' : 'REJECT'}
+                      </div>
+                      <p className="text-sm leading-6" data-testid="feedback-message">
+                        {llmFeedback.feedback}
+                      </p>
+                    </div>
+
+                    {llmFeedback.suggestion && llmFeedback.suggestion.trim() !== '' && (
+                      <div className="border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950" data-testid="suggestion-text">
+                        <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                          <FaRegLightbulb aria-hidden="true" />
+                          Suggestion
+                        </div>
+                        <p className="text-sm leading-6 text-slate-700 dark:text-slate-300">
+                          {llmFeedback.suggestion}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="flex min-h-[340px] items-center justify-center border border-dashed border-slate-300 p-6 text-center dark:border-slate-700"
+                  >
+                    <div>
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                        <FaRegLightbulb aria-hidden="true" />
+                      </div>
+                      <p className="text-sm font-medium">No analysis yet</p>
+                      <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                        Awaiting review analysis.
+                      </p>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </aside>
         </form>
-      </div >
-    </div >
+      </div>
+    </div>
   )
 }

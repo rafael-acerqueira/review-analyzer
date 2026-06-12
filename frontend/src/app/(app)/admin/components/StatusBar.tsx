@@ -7,8 +7,9 @@ export function StatusBar({ by_status }: { by_status: Record<string, number> }) 
   }))
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow w-full flex flex-col items-center">
-      <span className="mb-2 font-semibold">Reviews by Status</span>
+    <div className="flex w-full flex-col border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
+      <span className="border-b border-slate-200 px-5 py-4 text-base font-semibold dark:border-slate-800">Reviews by Status</span>
+      <div className="p-4">
       <ResponsiveContainer width="100%" height={240}>
         <BarChart data={chartData}>
           <XAxis dataKey="status" />
@@ -18,6 +19,7 @@ export function StatusBar({ by_status }: { by_status: Record<string, number> }) 
           <Bar dataKey="count" fill="#2563eb" />
         </BarChart>
       </ResponsiveContainer>
+      </div>
     </div>
   )
 }

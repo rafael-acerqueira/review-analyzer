@@ -45,13 +45,13 @@ export default function AdminPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 flex flex-col items-center"
+          className="mx-auto max-w-7xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
         >
-          <span className="text-xl text-blue-900 dark:text-blue-200 font-semibold mb-2">Loading reviews...</span>
+          <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading reviews...</span>
         </motion.div>
       </div>
     )
@@ -59,28 +59,34 @@ export default function AdminPage() {
   if (error) return null
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <Toaster position="top-right" />
 
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="max-w-5xl w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 space-y-8"
+        className="mx-auto flex max-w-7xl flex-col gap-6"
       >
-        <h1 className="text-2xl font-bold text-center text-gray-800 dark:text-gray-100 mb-6">
-          Admin Panel - Reviews
-        </h1>
+        <header className="border-b border-slate-200 pb-5 dark:border-slate-800">
+          <p className="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+            Admin
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">
+            Reviews
+          </h1>
+        </header>
+
         <ReviewFilters onApply={setFilters} />
 
-        <div className="overflow-x-auto border rounded-xl shadow-sm bg-gray-100 dark:bg-gray-700 p-2">
+        <div className="overflow-x-auto border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900">
           <table className="min-w-full text-sm">
-            <thead className="bg-gray-200 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+            <thead className="border-b border-slate-200 bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400">
               <tr>
-                <th className="px-4 py-2">Sentiment</th>
-                <th className="px-4 py-2">Status</th>
-                <th className="px-4 py-2">Created</th>
-                <th className="px-4 py-2">Actions</th>
+                <th className="px-4 py-3">Sentiment</th>
+                <th className="px-4 py-3">Status</th>
+                <th className="px-4 py-3">Created</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -91,37 +97,37 @@ export default function AdminPage() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="border-t dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
+                    className="border-b border-slate-100 transition hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-950"
                   >
-                    <td className="px-4 py-2 text-center">
-                      <span className={`px-2 py-1 rounded-full font-semibold text-xs
-                        ${r.sentiment === 'positive' ? 'bg-green-100 text-green-700'
-                          : r.sentiment === 'negative' ? 'bg-red-100 text-red-700'
-                            : 'bg-gray-200 text-gray-700'}`}>
+                    <td className="px-4 py-3">
+                      <span className={`border px-2.5 py-1 font-semibold text-xs
+                        ${r.sentiment === 'positive' || r.sentiment === 'POSITIVE' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
+                          : r.sentiment === 'negative' || r.sentiment === 'NEGATIVE' ? 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200'
+                            : 'border-slate-200 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200'}`}>
                         {r.sentiment}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-center">
-                      <span className={`px-2 py-1 rounded-full font-bold uppercase text-xs
-                        ${r.status === 'Accepted' ? 'bg-green-100 text-green-700'
-                          : 'bg-red-100 text-red-700'}`}>
+                    <td className="px-4 py-3">
+                      <span className={`border px-2.5 py-1 font-bold uppercase text-xs
+                        ${r.status === 'Accepted' ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200'
+                          : 'border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200'}`}>
                         {r.status}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-center">
+                    <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
                       {format(new Date(r.created_at), 'yyyy-MM-dd HH:mm')}
                     </td>
-                    <td className="px-4 py-2 text-center">
-                      <div className="flex justify-center gap-2">
+                    <td className="px-4 py-3">
+                      <div className="flex justify-end gap-2">
                         <button
                           onClick={() => setSelectedReview(r)}
-                          className="text-sm bg-blue-900 hover:bg-blue-800 text-white px-3 py-1 rounded transition"
+                          className="min-h-9 border border-slate-300 bg-white px-3 py-1 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800"
                         >
                           View
                         </button>
                         <button
                           onClick={() => handleDelete(r.id)}
-                          className="text-sm bg-red-900 hover:bg-red-800 text-white px-3 py-1 rounded transition"
+                          className="min-h-9 border border-rose-200 bg-rose-50 px-3 py-1 text-sm font-semibold text-rose-700 transition hover:bg-rose-100 dark:border-rose-900 dark:bg-rose-950 dark:text-rose-200 dark:hover:bg-rose-900"
                         >
                           Delete
                         </button>
@@ -130,8 +136,8 @@ export default function AdminPage() {
                   </motion.tr>
                 )))
                   : (
-                    <tr className="border-t dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800">
-                      <td colSpan={4} className='text-center text-gray-500 dark:text-gray-300 py-4'>No records found!</td>
+                    <tr>
+                      <td colSpan={4} className='py-8 text-center text-sm text-slate-500 dark:text-slate-400'>No records found.</td>
                     </tr>)}
               </AnimatePresence>
             </tbody>

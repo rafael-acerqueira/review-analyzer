@@ -15,55 +15,60 @@ export default function AdminDashboard() {
   })
 
   if (isLoading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 flex flex-col items-center"
+        className="mx-auto max-w-7xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"
       >
-        <span className="text-xl text-blue-900 dark:text-blue-200 font-semibold mb-2">Loading dashboard...</span>
+        <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Loading dashboard...</span>
       </motion.div>
     </div>
   )
   if (error) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="max-w-md w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 flex flex-col items-center"
+        className="mx-auto max-w-7xl border border-rose-200 bg-rose-50 p-6 dark:border-rose-900 dark:bg-rose-950"
       >
-        <span className="text-xl text-red-700 dark:text-red-400 font-semibold mb-2">Failed to load stats.</span>
+        <span className="text-sm font-semibold text-rose-700 dark:text-rose-200">Failed to load stats.</span>
       </motion.div>
     </div>
   )
   if (!data) return null
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-slate-100 sm:px-6 lg:px-8">
       <Toaster position="top-right" />
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -10 }}
-        className="max-w-4xl w-full bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-8 space-y-8 my-8"
+        className="mx-auto flex max-w-7xl flex-col gap-6"
       >
-        <div className="flex flex-col sm:flex-row justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-4 sm:mb-0">Admin Dashboard</h1>
-          <Link href="/admin" className="text-blue-700 dark:text-blue-400 hover:underline font-semibold">← Reviews</Link>
-        </div>
+        <header className="flex flex-col gap-3 border-b border-slate-200 pb-5 dark:border-slate-800 md:flex-row md:items-end md:justify-between">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+              Admin
+            </p>
+            <h1 className="mt-1 text-3xl font-semibold text-slate-950 dark:text-white">Dashboard</h1>
+          </div>
+          <Link href="/admin" className="inline-flex min-h-10 items-center border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">Reviews</Link>
+        </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
-          <motion.div whileHover={{ scale: 1.03 }} className="bg-gray-100 dark:bg-gray-700 rounded-xl shadow p-6 flex flex-col items-center">
-            <span className="text-lg font-semibold text-gray-700 dark:text-gray-200">Total Reviews</span>
-            <span className="text-3xl font-bold text-blue-900 dark:text-blue-300">{data.total_reviews}</span>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <motion.div whileHover={{ y: -2 }} className="border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
+            <span className="text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400">Total Reviews</span>
+            <span className="mt-2 block text-3xl font-semibold text-slate-950 dark:text-white">{data.total_reviews}</span>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.03 }} className="bg-green-50 dark:bg-green-900 rounded-xl shadow p-6 flex flex-col items-center">
-            <span className="text-lg font-semibold text-gray-700 dark:text-gray-200">Accepted (%)</span>
-            <span className="text-3xl font-bold text-green-800 dark:text-green-400">{data.percent_accepted?.toFixed(1) || 0}%</span>
+          <motion.div whileHover={{ y: -2 }} className="border border-emerald-200 bg-emerald-50 p-5 dark:border-emerald-900 dark:bg-emerald-950">
+            <span className="text-xs font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Accepted</span>
+            <span className="mt-2 block text-3xl font-semibold text-emerald-800 dark:text-emerald-200">{data.percent_accepted?.toFixed(1) || 0}%</span>
           </motion.div>
-          <motion.div whileHover={{ scale: 1.03 }} className="bg-red-50 dark:bg-red-900 rounded-xl shadow p-6 flex flex-col items-center">
-            <span className="text-lg font-semibold text-gray-700 dark:text-gray-200">Rejected (%)</span>
-            <span className="text-3xl font-bold text-red-800 dark:text-red-400">{data.percent_rejected?.toFixed(1) || 0}%</span>
+          <motion.div whileHover={{ y: -2 }} className="border border-rose-200 bg-rose-50 p-5 dark:border-rose-900 dark:bg-rose-950">
+            <span className="text-xs font-semibold uppercase tracking-wide text-rose-700 dark:text-rose-300">Rejected</span>
+            <span className="mt-2 block text-3xl font-semibold text-rose-800 dark:text-rose-200">{data.percent_rejected?.toFixed(1) || 0}%</span>
           </motion.div>
         </div>
 
@@ -71,14 +76,14 @@ export default function AdminDashboard() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="border border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-900"
           >
-            <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-3">Top Rejection Reasons</h2>
-            <ul className="bg-gray-100 dark:bg-gray-700 rounded-xl shadow p-4 space-y-2">
+            <h2 className="border-b border-slate-200 px-5 py-4 text-base font-semibold text-slate-950 dark:border-slate-800 dark:text-white">Top Rejection Reasons</h2>
+            <ul className="divide-y divide-slate-100 dark:divide-slate-800">
               {data.top_rejection_reasons.map((item: any, idx: number) => (
-                <li key={idx} className="flex justify-between items-center">
-                  <span className="text-gray-700 dark:text-gray-200">{item.reason}</span>
-                  <span className="font-mono text-blue-900 dark:text-blue-300">{item.count}</span>
+                <li key={idx} className="flex items-center justify-between gap-4 px-5 py-3">
+                  <span className="text-sm text-slate-700 dark:text-slate-200">{item.reason}</span>
+                  <span className="font-mono text-sm font-semibold text-slate-950 dark:text-white">{item.count}</span>
                 </li>
               ))}
             </ul>
@@ -88,7 +93,7 @@ export default function AdminDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gray-100 dark:bg-gray-700 rounded-2xl shadow p-8 flex flex-col items-center"
+          className="grid gap-4 xl:grid-cols-2"
         >
           <SentimentPie by_sentiment={data.by_sentiment} />
           <StatusBar by_status={data.by_status} />
