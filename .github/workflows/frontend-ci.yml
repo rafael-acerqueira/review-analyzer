@@ -148,7 +148,3 @@ jobs:
         with:
           name: uvicorn-log
           path: backend/uvicorn.log
-
-      - name: Prune uv cache
-        if: always()
-        run: uv cache prune --ci
