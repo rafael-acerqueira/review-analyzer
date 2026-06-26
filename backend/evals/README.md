@@ -24,6 +24,28 @@ database or RAG context. It measures the core review quality contract:
 The runner sets `EvaluateText(min_length=1)` so short reviews are evaluated by
 the LLM as rejection cases instead of being counted as technical input errors.
 
+By default, the runner fails with exit code `1` when core metrics regress below
+these thresholds:
+
+- status accuracy >= 95%
+- sentiment accuracy >= 90%
+- suggestion presence accuracy >= 95%
+- feedback length accuracy = 100%
+- output contract accuracy = 100%
+- error rate = 0%
+
+For exploratory runs without threshold failure:
+
+```bash
+.venv/bin/python -m evals.run_review_eval --no-thresholds
+```
+
+Thresholds can also be overridden, for example:
+
+```bash
+.venv/bin/python -m evals.run_review_eval --min-status-accuracy 90
+```
+
 The command may call the configured Hugging Face LLM and sentiment model.
 
 If the dependencies are not installed yet, run:

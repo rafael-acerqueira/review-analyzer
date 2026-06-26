@@ -11,6 +11,14 @@ from typing import Any
 
 
 VALID_STATUSES = {"Accepted", "Rejected"}
+DEFAULT_THRESHOLDS = {
+    "status_accuracy": 95.0,
+    "sentiment_accuracy": 90.0,
+    "suggestion_presence_accuracy": 95.0,
+    "feedback_length_accuracy": 100.0,
+    "output_contract_accuracy": 100.0,
+    "error_rate": 0.0,
+}
 
 
 @dataclass(frozen=True)
@@ -203,10 +211,73 @@ def _write_report(report: dict[str, Any], results_dir: Path) -> Path:
     return output_path
 
 
+def _threshold_failures(summary: dict[str, Any], thresholds: dict[str, float]) -> list[str]:
+    failures = []
+
+    for metric, threshold in thresholds.items():
+        actual = float(summary[metric])
+        if metric == "error_rate":
+            if actual > threshold:
+                failures.append(f"{metric}: expected <= {threshold}%, got {actual}%")
+            continue
+
+        if actual < threshold:
+            failures.append(f"{metric}: expected >= {threshold}%, got {actual}%")
+
+    return failures
+
+
+def _print_failures(items: list[dict[str, Any]]) -> None:
+    failed_items = [
+        item
+        for item in items
+        if item["error"] is not None or not all(item["checks"].values())
+    ]
+
+    if not failed_items:
+        return
+
+    print()
+    print("Failed cases:")
+    for item in failed_items:
+        failed_checks = [
+            name for name, passed in item["checks"].items() if not passed
+        ]
+        if item["error"] is not None:
+            failed_checks.append("error")
+
+        print(f"- {item['id']} ({', '.join(failed_checks)})")
+        print(f"  expected: {item['expected']}")
+        print(f"  actual: {item['actual']}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run offline LLMOps evaluations for review analysis.")
     parser.add_argument("--dataset", type=Path, default=_default_dataset_path())
     parser.add_argument("--results-dir", type=Path, default=_default_results_dir())
+    parser.add_argument(
+        "--no-thresholds",
+        action="store_true",
+        help="Run the eval without failing when metrics are below thresholds.",
+    )
+    parser.add_argument("--min-status-accuracy", type=float, default=DEFAULT_THRESHOLDS["status_accuracy"])
+    parser.add_argument("--min-sentiment-accuracy", type=float, default=DEFAULT_THRESHOLDS["sentiment_accuracy"])
+    parser.add_argument(
+        "--min-suggestion-presence-accuracy",
+        type=float,
+        default=DEFAULT_THRESHOLDS["suggestion_presence_accuracy"],
+    )
+    parser.add_argument(
+        "--min-feedback-length-accuracy",
+        type=float,
+        default=DEFAULT_THRESHOLDS["feedback_length_accuracy"],
+    )
+    parser.add_argument(
+        "--min-output-contract-accuracy",
+        type=float,
+        default=DEFAULT_THRESHOLDS["output_contract_accuracy"],
+    )
+    parser.add_argument("--max-error-rate", type=float, default=DEFAULT_THRESHOLDS["error_rate"])
     args = parser.parse_args()
 
     try:
@@ -256,7 +327,31 @@ def main() -> int:
     print()
     print(f"Results saved to {output_path}")
 
-    return 0
+    thresholds = {
+        "status_accuracy": args.min_status_accuracy,
+        "sentiment_accuracy": args.min_sentiment_accuracy,
+        "suggestion_presence_accuracy": args.min_suggestion_presence_accuracy,
+        "feedback_length_accuracy": args.min_feedback_length_accuracy,
+        "output_contract_accuracy": args.min_output_contract_accuracy,
+        "error_rate": args.max_error_rate,
+    }
+
+    if args.no_thresholds:
+        return 0
+
+    failures = _threshold_failures(summary, thresholds)
+    if not failures:
+        print()
+        print("Thresholds passed")
+        return 0
+
+    print()
+    print("Thresholds failed:")
+    for failure in failures:
+        print(f"- {failure}")
+    _print_failures(report["items"])
+
+    return 1
 
 
 if __name__ == "__main__":
