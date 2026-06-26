@@ -31,3 +31,23 @@ If the dependencies are not installed yet, run:
 ```bash
 uv sync --extra dev
 ```
+
+## Sentiment Model Comparison
+
+To evaluate the current sentiment model against the same dataset:
+
+```bash
+.venv/bin/python -m evals.run_sentiment_model_eval
+```
+
+To compare candidate models, pass `--model` multiple times:
+
+```bash
+.venv/bin/python -m evals.run_sentiment_model_eval \
+  --model distilbert-base-uncased-finetuned-sst-2-english \
+  --model siebert/sentiment-roberta-large-english
+```
+
+The report includes accuracy, failures, latency, group-level metrics, and a
+confusion summary for each model. Candidate models may be downloaded by
+Transformers on first use.
