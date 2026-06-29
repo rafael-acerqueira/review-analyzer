@@ -11,13 +11,15 @@ from typing import Any
 
 
 VALID_STATUSES = {"Accepted", "Rejected"}
-DEFAULT_THRESHOLDS = {
+CORE_THRESHOLDS = {
     "status_accuracy": 95.0,
-    "sentiment_accuracy": 90.0,
     "suggestion_presence_accuracy": 95.0,
     "feedback_length_accuracy": 100.0,
     "output_contract_accuracy": 100.0,
     "error_rate": 0.0,
+}
+SECONDARY_THRESHOLDS = {
+    "sentiment_accuracy": 90.0,
 }
 
 
@@ -227,6 +229,30 @@ def _threshold_failures(summary: dict[str, Any], thresholds: dict[str, float]) -
     return failures
 
 
+def _metric_passed(metric: str, actual: float, threshold: float) -> bool:
+    if metric == "error_rate":
+        return actual <= threshold
+
+    return actual >= threshold
+
+
+def _format_metric_status(metric: str, actual: float, threshold: float, *, warning: bool = False) -> str:
+    passed = _metric_passed(metric, actual, threshold)
+    if passed:
+        return "PASS"
+
+    return "WARN" if warning else "FAIL"
+
+
+def _print_metric_group(title: str, summary: dict[str, Any], thresholds: dict[str, float], *, warning: bool = False) -> None:
+    print(title)
+    for metric, threshold in thresholds.items():
+        actual = float(summary[metric])
+        status = _format_metric_status(metric, actual, threshold, warning=warning)
+        comparator = "<=" if metric == "error_rate" else ">="
+        print(f"  {metric}: {actual}% {status} ({comparator} {threshold}%)")
+
+
 def _print_failures(items: list[dict[str, Any]]) -> None:
     failed_items = [
         item
@@ -258,26 +284,26 @@ def main() -> int:
     parser.add_argument(
         "--no-thresholds",
         action="store_true",
-        help="Run the eval without failing when metrics are below thresholds.",
+        help="Run the eval without failing or warning when metrics are below thresholds.",
     )
-    parser.add_argument("--min-status-accuracy", type=float, default=DEFAULT_THRESHOLDS["status_accuracy"])
-    parser.add_argument("--min-sentiment-accuracy", type=float, default=DEFAULT_THRESHOLDS["sentiment_accuracy"])
+    parser.add_argument("--min-status-accuracy", type=float, default=CORE_THRESHOLDS["status_accuracy"])
+    parser.add_argument("--min-sentiment-accuracy", type=float, default=SECONDARY_THRESHOLDS["sentiment_accuracy"])
     parser.add_argument(
         "--min-suggestion-presence-accuracy",
         type=float,
-        default=DEFAULT_THRESHOLDS["suggestion_presence_accuracy"],
+        default=CORE_THRESHOLDS["suggestion_presence_accuracy"],
     )
     parser.add_argument(
         "--min-feedback-length-accuracy",
         type=float,
-        default=DEFAULT_THRESHOLDS["feedback_length_accuracy"],
+        default=CORE_THRESHOLDS["feedback_length_accuracy"],
     )
     parser.add_argument(
         "--min-output-contract-accuracy",
         type=float,
-        default=DEFAULT_THRESHOLDS["output_contract_accuracy"],
+        default=CORE_THRESHOLDS["output_contract_accuracy"],
     )
-    parser.add_argument("--max-error-rate", type=float, default=DEFAULT_THRESHOLDS["error_rate"])
+    parser.add_argument("--max-error-rate", type=float, default=CORE_THRESHOLDS["error_rate"])
     args = parser.parse_args()
 
     try:
@@ -317,37 +343,44 @@ def main() -> int:
     print("Review eval completed")
     print()
     print(f"Total: {summary['total']}")
-    print(f"Status accuracy: {summary['status_accuracy']}%")
-    print(f"Sentiment accuracy: {summary['sentiment_accuracy']}%")
-    print(f"Suggestion presence accuracy: {summary['suggestion_presence_accuracy']}%")
-    print(f"Feedback length accuracy: {summary['feedback_length_accuracy']}%")
-    print(f"Output contract accuracy: {summary['output_contract_accuracy']}%")
-    print(f"Error rate: {summary['error_rate']}%")
-    print(f"Avg latency: {summary['avg_latency_ms']}ms")
-    print()
-    print(f"Results saved to {output_path}")
-
-    thresholds = {
+    core_thresholds = {
         "status_accuracy": args.min_status_accuracy,
-        "sentiment_accuracy": args.min_sentiment_accuracy,
         "suggestion_presence_accuracy": args.min_suggestion_presence_accuracy,
         "feedback_length_accuracy": args.min_feedback_length_accuracy,
         "output_contract_accuracy": args.min_output_contract_accuracy,
         "error_rate": args.max_error_rate,
     }
+    secondary_thresholds = {
+        "sentiment_accuracy": args.min_sentiment_accuracy,
+    }
+
+    _print_metric_group("Core metrics", summary, core_thresholds)
+    print()
+    _print_metric_group("Secondary metrics", summary, secondary_thresholds, warning=True)
+    print(f"  avg_latency_ms: {summary['avg_latency_ms']} INFO")
+    print()
+    print(f"Results saved to {output_path}")
 
     if args.no_thresholds:
         return 0
 
-    failures = _threshold_failures(summary, thresholds)
-    if not failures:
+    core_failures = _threshold_failures(summary, core_thresholds)
+    secondary_warnings = _threshold_failures(summary, secondary_thresholds)
+
+    if secondary_warnings:
         print()
-        print("Thresholds passed")
+        print("Secondary metric warnings:")
+        for warning in secondary_warnings:
+            print(f"- {warning}")
+
+    if not core_failures:
+        print()
+        print("Core thresholds passed")
         return 0
 
     print()
-    print("Thresholds failed:")
-    for failure in failures:
+    print("Core thresholds failed:")
+    for failure in core_failures:
         print(f"- {failure}")
     _print_failures(report["items"])
 

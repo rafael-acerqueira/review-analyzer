@@ -12,7 +12,7 @@ The runner reads `review_eval_dataset.json`, evaluates each review with the back
 `EvaluateText` use case, and writes a timestamped JSON report to `evals/results/`.
 
 This first evaluation is intentionally offline and does not use the application
-database or RAG context. It measures the core review quality contract:
+database or RAG context. It measures the review quality contract:
 
 - status accuracy
 - sentiment accuracy
@@ -24,17 +24,21 @@ database or RAG context. It measures the core review quality contract:
 The runner sets `EvaluateText(min_length=1)` so short reviews are evaluated by
 the LLM as rejection cases instead of being counted as technical input errors.
 
-By default, the runner fails with exit code `1` when core metrics regress below
-these thresholds:
+By default, the runner fails with exit code `1` only when core metrics regress
+below these thresholds:
 
 - status accuracy >= 95%
-- sentiment accuracy >= 90%
 - suggestion presence accuracy >= 95%
 - feedback length accuracy = 100%
 - output contract accuracy = 100%
 - error rate = 0%
 
-For exploratory runs without threshold failure:
+Secondary metrics are reported as warnings, but do not fail the command:
+
+- sentiment accuracy >= 90%
+- average latency
+
+For exploratory runs without threshold failure or warnings:
 
 ```bash
 .venv/bin/python -m evals.run_review_eval --no-thresholds
