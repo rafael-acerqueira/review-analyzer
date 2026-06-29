@@ -60,6 +60,18 @@ If the dependencies are not installed yet, run:
 uv sync --extra dev
 ```
 
+## Smoke Check
+
+For CI or quick local validation without calling the LLM, run:
+
+```bash
+.venv/bin/python -m evals.validate_review_eval
+```
+
+This checks that the dataset is valid, case IDs are unique, required groups are
+present, eval runners have valid Python syntax, and the prompt still contains
+the core safety contract.
+
 ## Sentiment Model Comparison
 
 To evaluate the current sentiment model against the same dataset:
