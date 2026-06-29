@@ -17,6 +17,7 @@ database or RAG context. It measures the review quality contract:
 - status accuracy
 - sentiment accuracy
 - suggestion presence
+- suggestion guidance safety
 - feedback length
 - output contract validity
 - latency and error rate
@@ -36,6 +37,7 @@ below these thresholds:
 Secondary metrics are reported as warnings, but do not fail the command:
 
 - sentiment accuracy >= 90%
+- suggestion guidance safety >= 90%
 - average latency
 
 For exploratory runs without threshold failure or warnings:

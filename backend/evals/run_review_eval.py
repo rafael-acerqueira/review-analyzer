@@ -20,6 +20,28 @@ CORE_THRESHOLDS = {
 }
 SECONDARY_THRESHOLDS = {
     "sentiment_accuracy": 90.0,
+    "suggestion_guidance_safety": 90.0,
+}
+GUIDANCE_TERMS = {
+    "add",
+    "mention",
+    "describe",
+    "include",
+    "explain",
+    "consider",
+    "try",
+    "focus",
+    "clarify",
+    "provide",
+}
+CONDITIONAL_TERMS = {
+    "if",
+    "such as",
+    "for example",
+    "consider",
+    "could",
+    "try",
+    "when",
 }
 
 
@@ -59,6 +81,21 @@ def _suggestion_presence_passed(actual_status: str | None, suggestion: str, expe
     return True
 
 
+def _suggestion_guidance_safe(actual_status: str | None, suggestion: str, expected_required: bool) -> bool:
+    text = (suggestion or "").strip()
+    if actual_status == "Accepted" or not expected_required:
+        return True
+    if not text:
+        return False
+
+    lowered = text.lower()
+    has_guidance = any(term in lowered for term in GUIDANCE_TERMS)
+    has_conditional = any(term in lowered for term in CONDITIONAL_TERMS)
+    looks_like_finished_review = lowered.startswith(("the ", "this ", "i ", "my "))
+
+    return has_guidance and (has_conditional or not looks_like_finished_review)
+
+
 def _pct(passed: int, total: int) -> float:
     return round((passed / total) * 100, 2) if total else 0.0
 
@@ -79,6 +116,10 @@ def _summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
         ),
         "output_contract_accuracy": _pct(
             sum(1 for item in items if item["checks"]["output_contract_passed"]),
+            total,
+        ),
+        "suggestion_guidance_safety": _pct(
+            sum(1 for item in items if item["checks"]["suggestion_guidance_safe"]),
             total,
         ),
         "error_rate": round(
@@ -108,6 +149,10 @@ def _summarize(items: list[dict[str, Any]]) -> dict[str, Any]:
             ),
             "suggestion_presence_accuracy": _pct(
                 sum(1 for item in group_items if item["checks"]["suggestion_presence_passed"]),
+                len(group_items),
+            ),
+            "suggestion_guidance_safety": _pct(
+                sum(1 for item in group_items if item["checks"]["suggestion_guidance_safe"]),
                 len(group_items),
             ),
         }
@@ -168,6 +213,11 @@ def _evaluate_case(use_case: Any, invalid_review_error: type[Exception], case: E
             "status_passed": actual["status"] == case.expected_status,
             "sentiment_passed": actual["sentiment"] == case.expected_sentiment,
             "suggestion_presence_passed": _suggestion_presence_passed(
+                actual["status"],
+                suggestion,
+                case.suggestion_required,
+            ),
+            "suggestion_guidance_safe": _suggestion_guidance_safe(
                 actual["status"],
                 suggestion,
                 case.suggestion_required,
@@ -289,6 +339,11 @@ def main() -> int:
     parser.add_argument("--min-status-accuracy", type=float, default=CORE_THRESHOLDS["status_accuracy"])
     parser.add_argument("--min-sentiment-accuracy", type=float, default=SECONDARY_THRESHOLDS["sentiment_accuracy"])
     parser.add_argument(
+        "--min-suggestion-guidance-safety",
+        type=float,
+        default=SECONDARY_THRESHOLDS["suggestion_guidance_safety"],
+    )
+    parser.add_argument(
         "--min-suggestion-presence-accuracy",
         type=float,
         default=CORE_THRESHOLDS["suggestion_presence_accuracy"],
@@ -352,6 +407,7 @@ def main() -> int:
     }
     secondary_thresholds = {
         "sentiment_accuracy": args.min_sentiment_accuracy,
+        "suggestion_guidance_safety": args.min_suggestion_guidance_safety,
     }
 
     _print_metric_group("Core metrics", summary, core_thresholds)
