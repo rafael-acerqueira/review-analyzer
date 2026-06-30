@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 LLM_ERROR_RESPONSE = '{"status": "Rejected", "feedback": "AI error", "suggestion": ""}'
 SENTIMENT_MODEL_NAME = os.getenv(
     "SENTIMENT_MODEL_NAME",
-    "distilbert-base-uncased-finetuned-sst-2-english",
+    "siebert/sentiment-roberta-large-english",
 )
 
 HF_TOKEN = os.getenv("HF_TOKEN")

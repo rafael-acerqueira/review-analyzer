@@ -1,0 +1,19 @@
+{
+  "name": "current",
+  "dataset_cases": 40,
+  "core_metrics": {
+    "status_accuracy": 100.0,
+    "suggestion_presence_accuracy": 100.0,
+    "feedback_length_accuracy": 100.0,
+    "output_contract_accuracy": 100.0,
+    "error_rate": 0.0
+  },
+  "secondary_metrics": {
+    "sentiment_accuracy": 100.0,
+    "suggestion_guidance_safety": 100.0
+  },
+  "informational_metrics": {
+    "avg_latency_ms": 931.41
+  },
+  "notes": "Baseline captured after expanding the dataset to 40 cases and switching suggestions to guidance-based output."
+}
