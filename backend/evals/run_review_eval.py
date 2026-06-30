@@ -68,6 +68,10 @@ def _default_baseline_path() -> Path:
     return Path(__file__).with_name("baselines") / "current.json"
 
 
+def _default_markdown_path(report_path: Path) -> Path:
+    return report_path.with_suffix(".md")
+
+
 def _load_dataset(path: Path) -> list[EvalCase]:
     data = json.loads(path.read_text(encoding="utf-8"))
     return [EvalCase(**item) for item in data]
@@ -333,12 +337,16 @@ def _print_baseline_comparison(summary: dict[str, Any], baseline: dict[str, Any]
         print(f"  {metric}: {actual}% ({delta:+.2f} vs baseline)")
 
 
-def _print_failures(items: list[dict[str, Any]]) -> None:
-    failed_items = [
+def _failed_items(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    return [
         item
         for item in items
         if item["error"] is not None or not all(item["checks"].values())
     ]
+
+
+def _print_failures(items: list[dict[str, Any]]) -> None:
+    failed_items = _failed_items(items)
 
     if not failed_items:
         return
@@ -357,6 +365,113 @@ def _print_failures(items: list[dict[str, Any]]) -> None:
         print(f"  actual: {item['actual']}")
 
 
+def _markdown_metric_rows(summary: dict[str, Any], thresholds: dict[str, float], *, warning: bool = False) -> list[str]:
+    rows = []
+    for metric, threshold in thresholds.items():
+        actual = float(summary[metric])
+        status = _format_metric_status(metric, actual, threshold, warning=warning)
+        comparator = "<=" if metric == "error_rate" else ">="
+        rows.append(f"| `{metric}` | {actual}% | {comparator} {threshold}% | {status} |")
+    return rows
+
+
+def _markdown_baseline_rows(summary: dict[str, Any], baseline: dict[str, Any]) -> list[str]:
+    rows = []
+    expected_cases = baseline.get("dataset_cases")
+    if expected_cases is not None:
+        actual_cases = summary["total"]
+        delta = actual_cases - int(expected_cases)
+        rows.append(f"| `dataset_cases` | {actual_cases} | {expected_cases} | {delta:+} |")
+
+    for metric, baseline_value in _baseline_metrics(baseline).items():
+        actual = float(summary[metric])
+        delta = actual - baseline_value
+        rows.append(f"| `{metric}` | {actual}% | {baseline_value}% | {delta:+.2f} |")
+
+    return rows
+
+
+def _render_markdown_summary(
+    report: dict[str, Any],
+    *,
+    core_thresholds: dict[str, float],
+    secondary_thresholds: dict[str, float],
+    baseline: dict[str, Any] | None,
+    core_failures: list[str],
+    secondary_warnings: list[str],
+) -> str:
+    summary = report["summary"]
+    lines = [
+        "# Review Eval Summary",
+        "",
+        f"- Run ID: `{report['run_id']}`",
+        f"- Dataset: `{report['dataset']}`",
+        f"- Cases: {summary['total']}",
+        f"- Result: {'FAIL' if core_failures else 'PASS'}",
+        "",
+        "## Core Metrics",
+        "",
+        "| Metric | Actual | Threshold | Status |",
+        "|---|---:|---:|---|",
+        *_markdown_metric_rows(summary, core_thresholds),
+        "",
+        "## Secondary Metrics",
+        "",
+        "| Metric | Actual | Threshold | Status |",
+        "|---|---:|---:|---|",
+        *_markdown_metric_rows(summary, secondary_thresholds, warning=True),
+        f"| `avg_latency_ms` | {summary['avg_latency_ms']} | n/a | INFO |",
+        "",
+    ]
+
+    if baseline is not None:
+        lines.extend(
+            [
+                "## Baseline Comparison",
+                "",
+                "| Metric | Current | Baseline | Delta |",
+                "|---|---:|---:|---:|",
+                *_markdown_baseline_rows(summary, baseline),
+                "",
+            ]
+        )
+
+    if secondary_warnings:
+        lines.extend(["## Secondary Warnings", ""])
+        lines.extend(f"- {warning}" for warning in secondary_warnings)
+        lines.append("")
+
+    failed_items = _failed_items(report["items"])
+    lines.extend(["## Failed Cases", ""])
+    if not failed_items:
+        lines.append("None")
+    else:
+        for item in failed_items:
+            failed_checks = [
+                name for name, passed in item["checks"].items() if not passed
+            ]
+            if item["error"] is not None:
+                failed_checks.append("error")
+            lines.extend(
+                [
+                    f"### `{item['id']}`",
+                    "",
+                    f"- Failed checks: {', '.join(failed_checks)}",
+                    f"- Expected: `{json.dumps(item['expected'], ensure_ascii=False)}`",
+                    f"- Actual: `{json.dumps(item['actual'], ensure_ascii=False)}`",
+                    "",
+                ]
+            )
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
+def _write_markdown_summary(markdown: str, path: Path) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(markdown, encoding="utf-8")
+    return path
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run offline LLMOps evaluations for review analysis.")
     parser.add_argument("--dataset", type=Path, default=_default_dataset_path())
@@ -371,6 +486,17 @@ def main() -> int:
         "--no-baseline",
         action="store_true",
         help="Skip baseline comparison output.",
+    )
+    parser.add_argument(
+        "--markdown-summary",
+        type=Path,
+        default=None,
+        help="Write a Markdown summary to the given path.",
+    )
+    parser.add_argument(
+        "--markdown-summary-auto",
+        action="store_true",
+        help="Write a Markdown summary next to the JSON report.",
     )
     parser.add_argument(
         "--no-thresholds",
@@ -459,13 +585,43 @@ def main() -> int:
     print(f"Results saved to {output_path}")
 
     if not args.no_baseline and args.baseline.exists():
-        _print_baseline_comparison(summary, _load_baseline(args.baseline))
+        baseline = _load_baseline(args.baseline)
+        _print_baseline_comparison(summary, baseline)
+    else:
+        baseline = None
 
     if args.no_thresholds:
+        core_failures = []
+        secondary_warnings = []
+        markdown_path = _default_markdown_path(output_path) if args.markdown_summary_auto else args.markdown_summary
+        if markdown_path is not None:
+            markdown = _render_markdown_summary(
+                report,
+                core_thresholds=core_thresholds,
+                secondary_thresholds=secondary_thresholds,
+                baseline=baseline,
+                core_failures=core_failures,
+                secondary_warnings=secondary_warnings,
+            )
+            _write_markdown_summary(markdown, markdown_path)
+            print(f"Markdown summary saved to {markdown_path}")
         return 0
 
     core_failures = _threshold_failures(summary, core_thresholds)
     secondary_warnings = _threshold_failures(summary, secondary_thresholds)
+
+    markdown_path = _default_markdown_path(output_path) if args.markdown_summary_auto else args.markdown_summary
+    if markdown_path is not None:
+        markdown = _render_markdown_summary(
+            report,
+            core_thresholds=core_thresholds,
+            secondary_thresholds=secondary_thresholds,
+            baseline=baseline,
+            core_failures=core_failures,
+            secondary_warnings=secondary_warnings,
+        )
+        _write_markdown_summary(markdown, markdown_path)
+        print(f"Markdown summary saved to {markdown_path}")
 
     if secondary_warnings:
         print()

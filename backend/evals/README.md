@@ -60,6 +60,18 @@ still what decide whether the command fails. To skip the baseline output:
 .venv/bin/python -m evals.run_review_eval --no-baseline
 ```
 
+To generate a Markdown summary for PRs or local review:
+
+```bash
+.venv/bin/python -m evals.run_review_eval --markdown-summary evals/results/latest-summary.md
+```
+
+Or write a Markdown file next to the timestamped JSON report:
+
+```bash
+.venv/bin/python -m evals.run_review_eval --markdown-summary-auto
+```
+
 The command may call the configured Hugging Face LLM and sentiment model.
 
 If the dependencies are not installed yet, run:
