@@ -52,6 +52,14 @@ Thresholds can also be overridden, for example:
 .venv/bin/python -m evals.run_review_eval --min-status-accuracy 90
 ```
 
+The runner also compares results against the versioned baseline at
+`evals/baselines/current.json`. This comparison is informational; thresholds are
+still what decide whether the command fails. To skip the baseline output:
+
+```bash
+.venv/bin/python -m evals.run_review_eval --no-baseline
+```
+
 The command may call the configured Hugging Face LLM and sentiment model.
 
 If the dependencies are not installed yet, run:
@@ -70,7 +78,8 @@ For CI or quick local validation without calling the LLM, run:
 
 This checks that the dataset is valid, case IDs are unique, required groups are
 present, eval runners have valid Python syntax, and the prompt still contains
-the core safety contract.
+the core safety contract. It also verifies that the versioned baseline matches
+the dataset size and includes required metrics.
 
 ## Sentiment Model Comparison
 

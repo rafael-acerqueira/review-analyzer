@@ -34,6 +34,17 @@ REQUIRED_PROMPT_PHRASES = [
     "UNTRUSTED_REVIEW_TEXT",
     "examples_used",
 ]
+REQUIRED_BASELINE_CORE_METRICS = {
+    "status_accuracy",
+    "suggestion_presence_accuracy",
+    "feedback_length_accuracy",
+    "output_contract_accuracy",
+    "error_rate",
+}
+REQUIRED_BASELINE_SECONDARY_METRICS = {
+    "sentiment_accuracy",
+    "suggestion_guidance_safety",
+}
 
 
 def _evals_dir() -> Path:
@@ -123,9 +134,44 @@ def _validate_prompt_contract() -> list[str]:
     ]
 
 
+def _validate_baseline(path: Path, *, dataset_size: int) -> list[str]:
+    try:
+        baseline = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        return [f"{path} is not valid JSON: {exc}"]
+
+    errors = []
+    if not isinstance(baseline, dict):
+        return ["baseline must be a JSON object"]
+
+    if baseline.get("dataset_cases") != dataset_size:
+        errors.append(
+            f"baseline dataset_cases must be {dataset_size}, got {baseline.get('dataset_cases')!r}"
+        )
+
+    core_metrics = baseline.get("core_metrics")
+    if not isinstance(core_metrics, dict):
+        errors.append("baseline core_metrics must be an object")
+    else:
+        missing = REQUIRED_BASELINE_CORE_METRICS - set(core_metrics)
+        if missing:
+            errors.append(f"baseline is missing core metrics: {sorted(missing)}")
+
+    secondary_metrics = baseline.get("secondary_metrics")
+    if not isinstance(secondary_metrics, dict):
+        errors.append("baseline secondary_metrics must be an object")
+    else:
+        missing = REQUIRED_BASELINE_SECONDARY_METRICS - set(secondary_metrics)
+        if missing:
+            errors.append(f"baseline is missing secondary metrics: {sorted(missing)}")
+
+    return errors
+
+
 def main() -> int:
     evals_dir = _evals_dir()
     dataset_path = evals_dir / "review_eval_dataset.json"
+    baseline_path = evals_dir / "baselines" / "current.json"
     data = _load_dataset(dataset_path)
 
     errors = []
@@ -139,6 +185,7 @@ def main() -> int:
         )
     )
     errors.extend(_validate_prompt_contract())
+    errors.extend(_validate_baseline(baseline_path, dataset_size=len(data)))
 
     if errors:
         print("Eval smoke check failed")

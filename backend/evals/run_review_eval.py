@@ -64,9 +64,17 @@ def _default_results_dir() -> Path:
     return Path(__file__).with_name("results")
 
 
+def _default_baseline_path() -> Path:
+    return Path(__file__).with_name("baselines") / "current.json"
+
+
 def _load_dataset(path: Path) -> list[EvalCase]:
     data = json.loads(path.read_text(encoding="utf-8"))
     return [EvalCase(**item) for item in data]
+
+
+def _load_baseline(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def _suggestion_presence_passed(actual_status: str | None, suggestion: str, expected_required: bool) -> bool:
@@ -303,6 +311,28 @@ def _print_metric_group(title: str, summary: dict[str, Any], thresholds: dict[st
         print(f"  {metric}: {actual}% {status} ({comparator} {threshold}%)")
 
 
+def _baseline_metrics(baseline: dict[str, Any]) -> dict[str, float]:
+    metrics = {}
+    metrics.update(baseline.get("core_metrics", {}))
+    metrics.update(baseline.get("secondary_metrics", {}))
+    return {key: float(value) for key, value in metrics.items()}
+
+
+def _print_baseline_comparison(summary: dict[str, Any], baseline: dict[str, Any]) -> None:
+    print()
+    print(f"Baseline comparison: {baseline.get('name', 'baseline')}")
+    expected_cases = baseline.get("dataset_cases")
+    if expected_cases is not None:
+        actual_cases = summary["total"]
+        delta = actual_cases - int(expected_cases)
+        print(f"  dataset_cases: {actual_cases} ({delta:+} vs baseline)")
+
+    for metric, baseline_value in _baseline_metrics(baseline).items():
+        actual = float(summary[metric])
+        delta = actual - baseline_value
+        print(f"  {metric}: {actual}% ({delta:+.2f} vs baseline)")
+
+
 def _print_failures(items: list[dict[str, Any]]) -> None:
     failed_items = [
         item
@@ -331,6 +361,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run offline LLMOps evaluations for review analysis.")
     parser.add_argument("--dataset", type=Path, default=_default_dataset_path())
     parser.add_argument("--results-dir", type=Path, default=_default_results_dir())
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=_default_baseline_path(),
+        help="Baseline JSON used for informational comparison.",
+    )
+    parser.add_argument(
+        "--no-baseline",
+        action="store_true",
+        help="Skip baseline comparison output.",
+    )
     parser.add_argument(
         "--no-thresholds",
         action="store_true",
@@ -416,6 +457,9 @@ def main() -> int:
     print(f"  avg_latency_ms: {summary['avg_latency_ms']} INFO")
     print()
     print(f"Results saved to {output_path}")
+
+    if not args.no_baseline and args.baseline.exists():
+        _print_baseline_comparison(summary, _load_baseline(args.baseline))
 
     if args.no_thresholds:
         return 0
